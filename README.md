@@ -1,4 +1,5 @@
-<center>
+<div align="center">
+
 <img src="docs/assets/logo.png" alt="Jarvis AI Assistant" width="200" height="200" style="border-radius: 50%">
 
 # Jarvis AI Assistant
@@ -9,7 +10,7 @@
 [![Ollama](https://img.shields.io/badge/Ollama-LLM-purple.svg)](https://ollama.ai)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Server-red.svg)](https://fastapi.tiangolo.com)
 
-</center>
+</div>
 
 A modular AI assistant with MCP (Model Context Protocol) integration, supporting Gmail, Google Calendar, and system notifications.
 
