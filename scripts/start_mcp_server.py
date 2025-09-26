@@ -10,8 +10,9 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "packages" / "shared"))
 sys.path.insert(0, str(project_root / "packages" / "mcp-server"))
 
-from jarvis_shared.config import JarvisConfig
-from jarvis_mcp import MCPServer
+# Import after path setup (noqa: E402)
+from jarvis_shared.config import JarvisConfig  # noqa: E402
+from jarvis_mcp import MCPServer  # noqa: E402
 
 
 async def main():

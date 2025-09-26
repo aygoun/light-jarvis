@@ -1,7 +1,6 @@
 """Calendar tool implementation for MCP integration."""
 
 from typing import Dict, Any, List
-from datetime import datetime
 
 from jarvis_shared.logger import get_logger
 from jarvis_shared.config import GoogleConfig
@@ -73,9 +72,9 @@ class CalendarTool:
             }
 
         event_id = await self.client.create_event(
-            title=title,
-            start_time=start_time,
-            end_time=end_time,
+            title=str(title),
+            start_time=str(start_time),
+            end_time=str(end_time),
             description=description,
             location=location,
         )

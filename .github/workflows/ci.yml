@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Lint with ruff
+        run: uv run ruff check .
+
+      - name: Format check with black
+        run: uv run black --check .
+
+      - name: Type check with mypy
+        run: uv run mypy packages/ jarvis/ --ignore-missing-imports
+        continue-on-error: true # Don't fail CI on mypy errors for now
+
+      - name: Run unit tests
+        run: uv run pytest tests/unit/ -v --cov --cov-report=xml --cov-report=term-missing
+
+      - name: Run integration tests
+        run: uv run pytest tests/integration/ -v -m integration
+        continue-on-error: true # Integration tests might need external services
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Build packages
+        run: |
+          uv build packages/shared/
+          uv build packages/core/
+          uv build packages/llm-service/
+          uv build packages/mcp-server/
+          uv build packages/tools/gmail-tool/
+          uv build packages/tools/calendar-tool/
+          uv build packages/tools/notification-tool/
+          uv build .
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-packages
+          path: |
+            packages/*/dist/
+            dist/
+
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run safety check
+        run: uv run pip freeze | uv run safety check --stdin
+        continue-on-error: true
+
+      - name: Run bandit security linter
+        run: uv run bandit -r packages/ jarvis/ -f json -o bandit-report.json
+        continue-on-error: true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json

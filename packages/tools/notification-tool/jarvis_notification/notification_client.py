@@ -1,8 +1,8 @@
 """Notification client for system notifications and reminders."""
 
 import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from datetime import datetime
+from typing import Dict, Any, List
 import threading
 import time
 

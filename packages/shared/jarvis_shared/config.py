@@ -1,6 +1,5 @@
 """Configuration management for Jarvis."""
 
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -9,7 +8,7 @@ from pydantic import BaseModel, Field
 try:
     from pydantic_settings import BaseSettings
 except ImportError:
-    from pydantic import BaseSettings
+    from pydantic import BaseSettings  # type: ignore
 
 
 class OllamaConfig(BaseModel):
@@ -63,6 +62,7 @@ class JarvisConfig(BaseSettings):
     class Config:
         env_prefix = "JARVIS_"
         env_file = ".env"
+        env_nested_delimiter = "__"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

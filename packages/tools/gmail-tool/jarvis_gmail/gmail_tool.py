@@ -1,6 +1,5 @@
 """Gmail tool implementation for MCP integration."""
 
-import json
 from typing import Dict, Any, List
 
 from jarvis_shared.logger import get_logger

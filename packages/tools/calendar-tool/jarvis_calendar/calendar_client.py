@@ -94,6 +94,9 @@ class CalendarClient:
 
             self.logger.info(f"📅 Listing events from {start_time} to {end_time}")
 
+            if not self.service:
+                raise RuntimeError("Calendar service not authenticated")
+
             # Get events
             events_result = (
                 self.service.events()
@@ -164,7 +167,12 @@ class CalendarClient:
                 event["location"] = location
 
             if attendees:
-                event["attendees"] = [{"email": email} for email in attendees]
+                event["attendees"] = [
+                    {"email": email} for email in attendees if isinstance(email, str)
+                ]
+
+            if not self.service:
+                raise RuntimeError("Calendar service not authenticated")
 
             # Create event
             created_event = (

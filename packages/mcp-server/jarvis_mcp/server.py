@@ -1,6 +1,5 @@
 """MCP server implementation for Jarvis."""
 
-import asyncio
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel

@@ -1,8 +1,7 @@
 """MCP client for connecting to tools."""
 
-import asyncio
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from jarvis_shared.config import MCPConfig
 from jarvis_shared.models import ToolCall, ToolResult

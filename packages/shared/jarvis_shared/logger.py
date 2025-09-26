@@ -5,12 +5,11 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 from enum import Enum
 
 from rich.console import Console
 from rich.logging import RichHandler
-from rich.text import Text
 
 
 class LogLevel(str, Enum):
@@ -45,7 +44,13 @@ class JarvisLogger:
             log_level or os.getenv("JARVIS_LOG_LEVEL", "INFO").upper()
         )
 
-        self.log_dir = Path(log_dir or os.getenv("JARVIS_LOG_DIR", Path.cwd() / "logs"))
+        log_dir_env = os.getenv("JARVIS_LOG_DIR")
+        if log_dir is not None:
+            self.log_dir = Path(log_dir)
+        elif log_dir_env is not None:
+            self.log_dir = Path(log_dir_env)
+        else:
+            self.log_dir = Path.cwd() / "logs"
 
         self.console_output = (
             console_output
@@ -91,7 +96,7 @@ class JarvisLogger:
         # Console handler with Rich formatting
         if self.console_output:
             if self.rich_formatting:
-                console_handler = RichHandler(
+                console_handler: logging.Handler = RichHandler(
                     console=self.console,
                     show_time=True,
                     show_path=True,
@@ -283,7 +288,7 @@ def log_calls(logger_name: str = "jarvis"):
                 log.log_performance(f"{func.__name__}", duration)
                 return result
             except Exception as e:
-                log.exception(f"Error in {func.__name__}: {e}")
+                log.error(f"Error in {func.__name__}: {e}")
                 raise
 
         return wrapper

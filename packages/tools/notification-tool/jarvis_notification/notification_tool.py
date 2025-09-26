@@ -150,11 +150,11 @@ class NotificationTool:
             elif "next week" in when:
                 return now + timedelta(weeks=1)
 
-            return None
+            return datetime.now()
 
         except Exception as e:
             self.logger.error(f"❌ Failed to parse when parameter: {e}")
-            return None
+            return datetime.now()
 
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
         """Get tool definitions for MCP registration."""

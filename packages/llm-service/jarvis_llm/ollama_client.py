@@ -42,7 +42,12 @@ class OllamaClient:
             request_data["tools"] = tools
 
         try:
-            response = self.client.chat(**request_data)
+            response = self.client.chat(
+                model=self.config.model,
+                messages=ollama_messages,
+                tools=tools if tools else None,
+                options={"temperature": self.config.temperature, **kwargs},
+            )
             return self._parse_response(response)
         except Exception as e:
             raise RuntimeError(f"Ollama request failed: {e}")
@@ -78,7 +83,13 @@ class OllamaClient:
             )
 
             # Use Ollama's streaming chat
-            stream = self.client.chat(**request_data)
+            stream = self.client.chat(
+                model=self.config.model,
+                messages=ollama_messages,
+                tools=tools if tools else None,
+                options={"temperature": self.config.temperature, **kwargs},
+                stream=True,
+            )
 
             for chunk in stream:
                 if "message" in chunk and "content" in chunk["message"]:

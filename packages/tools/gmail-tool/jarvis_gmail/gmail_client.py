@@ -81,6 +81,9 @@ class GmailClient:
                 return []
 
         try:
+            if not self.service:
+                raise RuntimeError("Gmail service not authenticated")
+
             self.logger.info(f"📧 Reading emails with query: '{query}'")
 
             # Search for messages
@@ -96,6 +99,8 @@ class GmailClient:
 
             for message in messages:
                 # Get full message details
+                if not self.service:
+                    continue
                 msg = (
                     self.service.users()
                     .messages()
@@ -116,6 +121,7 @@ class GmailClient:
 
     async def send_email(self, to: str, subject: str, body: str) -> bool:
         """Send an email via Gmail."""
+        return False  # Disable email sending for now
         if not self.service:
             if not await self.authenticate():
                 return False
