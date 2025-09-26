@@ -1,6 +1,24 @@
+<center>
+<img src="docs/assets/logo.png" alt="Jarvis AI Assistant" width="200" height="200" style="border-radius: 50%">
+
 # Jarvis AI Assistant
 
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-Protocol-orange.svg)](https://modelcontextprotocol.io)
+[![Ollama](https://img.shields.io/badge/Ollama-LLM-purple.svg)](https://ollama.ai)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Server-red.svg)](https://fastapi.tiangolo.com)
+
+</center>
+
 A modular AI assistant with MCP (Model Context Protocol) integration, supporting Gmail, Google Calendar, and system notifications.
+
+**TODO:**
+
+- Small Website UI
+- STT & TTS on Web
+- Create Objects Recognition Model via Image then live webcam
+- Integrate with workflow LLM (ie: "Launch the camera and tell me what you see")
 
 ## 🚀 Quick Start
 
