@@ -1,0 +1,55 @@
+.env
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+*.log
+*.pot
+*.mo
+*.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.tox/
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+*.sqlite3
+*.db
+*.DS_Store
+*.swp
+*.bak
+*.tmp
+*.orig
+*.env
+.env.*
+venv/
+ENV/
+env/
+.venv/
+# VSCode
+.vscode/
+# macOS
+.DS_Store
+
+# uv (https://github.com/astral-sh/uv)
+.uv/
+uv.cache/
+uv-report.json

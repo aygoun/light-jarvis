@@ -1,0 +1,49 @@
+[project]
+name = "jarvis"
+version = "0.1.0"
+description = "AI Assistant like Jarvis with local LLM and MCP integration"
+authors = [
+    {name = "Armand Blin", email = "armand.blin@gmail.com"},
+]
+dependencies = [
+    "jarvis-shared",
+    "jarvis-core",
+    "typer>=0.12.0",
+    "ollama>=0.3.0",
+    "mcp>=1.0.0",
+    "google-auth>=2.29.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-api-python-client>=2.140.0",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.0.0",
+    "rich>=13.7.0",
+    "asyncio-mqtt>=0.16.0",
+    "python-dotenv>=1.0.0",
+]
+requires-python = ">=3.11"
+
+[project.scripts]
+jarvis = "jarvis.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.workspace]
+members = [
+    "packages/core",
+    "packages/shared"
+]
+
+[tool.uv.sources]
+jarvis-shared = { workspace = true }
+jarvis-core = { workspace = true }
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "black>=24.0.0",
+    "ruff>=0.5.0",
+    "mypy>=1.10.0",
+]
