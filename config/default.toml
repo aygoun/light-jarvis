@@ -2,17 +2,17 @@
 
 [general]
 debug = false
-log_level = "INFO"
+log_level = "DEBUG"
 
 [ollama]
 host = "http://localhost:11434"
-model = "mistral:7b"
+model = "llama3.2:3b"
 temperature = 0.1
 timeout = 120
 
 [mcp]
 host = "localhost"
-port = 8000
+port = 3000
 timeout = 30
 
 [google]
@@ -20,7 +20,7 @@ credentials_file = "~/.jarvis/google_credentials.json"
 token_file = "~/.jarvis/google_token.json"
 scopes = [
     "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/gmail.send",
+    # "https://www.googleapis.com/auth/gmail.send",
     "https://www.googleapis.com/auth/calendar.readonly",
     "https://www.googleapis.com/auth/calendar.events",
 ]

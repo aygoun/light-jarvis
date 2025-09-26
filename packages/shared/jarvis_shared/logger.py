@@ -1,4 +1,4 @@
-"""Advanced logging system for Jarvis with environment-based configuration."""
+"""Advanced logging system for Jarvis with TOML-based configuration."""
 
 import logging
 import os
@@ -10,6 +10,8 @@ from enum import Enum
 
 from rich.console import Console
 from rich.logging import RichHandler
+
+from .config import JarvisConfig
 
 
 class LogLevel(str, Enum):
@@ -28,61 +30,91 @@ class JarvisLogger:
     _instances: Dict[str, "JarvisLogger"] = {}
 
     def __init__(
-        self,
-        name: str = "jarvis",
-        log_level: Optional[str] = None,
-        log_dir: Optional[Path] = None,
-        console_output: Optional[bool] = None,
-        file_output: Optional[bool] = None,
-        rich_formatting: Optional[bool] = None,
+        self, name: str = "jarvis", config: Optional[JarvisConfig] = None, **kwargs
     ):
         self.name = name
         self.console = Console()
 
-        # Environment variable configuration with defaults
+        # Load configuration from TOML if not provided
+        if config is None:
+            config = JarvisConfig()
+
+        # Use TOML configuration with fallback to environment variables
         self.log_level = LogLevel(
-            log_level or os.getenv("JARVIS_LOG_LEVEL", "INFO").upper()
+            kwargs.get("log_level")
+            or config.general.log_level
+            or os.getenv("JARVIS_LOG_LEVEL", "INFO").upper()
         )
 
-        log_dir_env = os.getenv("JARVIS_LOG_DIR")
-        if log_dir is not None:
-            self.log_dir = Path(log_dir)
-        elif log_dir_env is not None:
-            self.log_dir = Path(log_dir_env)
-        else:
-            self.log_dir = Path.cwd() / "logs"
-
-        self.console_output = (
-            console_output
-            if console_output is not None
-            else os.getenv("JARVIS_LOG_CONSOLE", "false").lower() == "true"
+        self.log_dir = Path(
+            kwargs.get("log_dir")
+            or config.logging.dir
+            or os.getenv("JARVIS_LOG_DIR", "./logs")
         )
 
-        self.file_output = (
-            file_output
-            if file_output is not None
-            else os.getenv("JARVIS_LOG_FILE", "true").lower() == "true"
+        self.console_output = kwargs.get(
+            "console_output",
+            (
+                config.logging.console
+                if hasattr(config.logging, "console")
+                else os.getenv("JARVIS_LOG_CONSOLE", "false").lower() == "true"
+            ),
         )
 
-        self.rich_formatting = (
-            rich_formatting
-            if rich_formatting is not None
-            else os.getenv("JARVIS_LOG_RICH", "true").lower() == "true"
+        self.file_output = kwargs.get(
+            "file_output",
+            (
+                config.logging.file
+                if hasattr(config.logging, "file")
+                else os.getenv("JARVIS_LOG_FILE", "true").lower() == "true"
+            ),
+        )
+
+        self.rich_formatting = kwargs.get(
+            "rich_formatting",
+            (
+                config.logging.rich
+                if hasattr(config.logging, "rich")
+                else os.getenv("JARVIS_LOG_RICH", "true").lower() == "true"
+            ),
         )
 
         # Additional configuration
-        self.max_file_size = int(os.getenv("JARVIS_LOG_MAX_SIZE", "10485760"))  # 10MB
-        self.backup_count = int(os.getenv("JARVIS_LOG_BACKUP_COUNT", "5"))
-        self.date_format = os.getenv("JARVIS_LOG_DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
+        self.max_file_size = kwargs.get(
+            "max_file_size",
+            (
+                config.logging.max_size
+                if hasattr(config.logging, "max_size")
+                else int(os.getenv("JARVIS_LOG_MAX_SIZE", "10485760"))
+            ),
+        )
+        self.backup_count = kwargs.get(
+            "backup_count",
+            (
+                config.logging.backup_count
+                if hasattr(config.logging, "backup_count")
+                else int(os.getenv("JARVIS_LOG_BACKUP_COUNT", "5"))
+            ),
+        )
+        self.date_format = kwargs.get(
+            "date_format",
+            (
+                config.logging.date_format
+                if hasattr(config.logging, "date_format")
+                else os.getenv("JARVIS_LOG_DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
+            ),
+        )
 
         # Setup logger
         self.logger = self._setup_logger()
 
     @classmethod
-    def get_logger(cls, name: str = "jarvis", **kwargs) -> "JarvisLogger":
+    def get_logger(
+        cls, name: str = "jarvis", config: Optional[JarvisConfig] = None, **kwargs
+    ) -> "JarvisLogger":
         """Get or create a logger instance (singleton per name)."""
         if name not in cls._instances:
-            cls._instances[name] = cls(name, **kwargs)
+            cls._instances[name] = cls(name, config=config, **kwargs)
         return cls._instances[name]
 
     def _setup_logger(self) -> logging.Logger:
@@ -190,23 +222,10 @@ class JarvisLogger:
         """Log exception with traceback."""
         self.logger.exception(message, **kwargs)
 
-    def log_function_call(self, func_name: str, args: tuple = (), kwargs: dict = None):
-        """Log function calls for debugging."""
-        kwargs = kwargs or {}
-        args_str = ", ".join([str(arg) for arg in args])
-        kwargs_str = ", ".join([f"{k}={v}" for k, v in kwargs.items()])
-        params = ", ".join(filter(None, [args_str, kwargs_str]))
-        self.debug(f"🔧 Calling {func_name}({params})")
-
     def log_performance(self, operation: str, duration: float, **metadata):
         """Log performance metrics."""
         meta_str = " | ".join([f"{k}={v}" for k, v in metadata.items()])
         self.info(f"⏱️  {operation} completed in {duration:.3f}s | {meta_str}")
-
-    def log_api_call(self, method: str, url: str, status_code: int, duration: float):
-        """Log API calls."""
-        status_emoji = "✅" if 200 <= status_code < 300 else "❌"
-        self.info(f"{status_emoji} {method} {url} -> {status_code} ({duration:.3f}s)")
 
     def log_tool_execution(
         self, tool_name: str, success: bool, duration: float, **metadata
@@ -217,12 +236,6 @@ class JarvisLogger:
         self.info(
             f"{status_emoji} Tool '{tool_name}' executed in {duration:.3f}s | {meta_str}"
         )
-
-    def structured_log(self, level: str, event: str, **data):
-        """Log structured data for analysis."""
-        log_data = {"event": event, "timestamp": datetime.utcnow().isoformat(), **data}
-        log_method = getattr(self.logger, level.lower())
-        log_method(f"📊 {event} | {log_data}")
 
     def get_log_files(self) -> list[Path]:
         """Get list of current log files."""
@@ -264,45 +277,30 @@ class JarvisLogger:
 
 
 # Convenience functions for easy usage
-def get_logger(name: str = "jarvis", **kwargs) -> JarvisLogger:
+def get_logger(
+    name: str = "jarvis", config: Optional[JarvisConfig] = None, **kwargs
+) -> JarvisLogger:
     """Get a Jarvis logger instance."""
-    return JarvisLogger.get_logger(name, **kwargs)
+    return JarvisLogger.get_logger(name, config=config, **kwargs)
 
 
 # Default logger instance
 logger = get_logger()
 
 
-# Decorator for automatic function logging
-def log_calls(logger_name: str = "jarvis"):
-    """Decorator to automatically log function calls."""
-
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            log = get_logger(logger_name)
-            log.log_function_call(func.__name__, args, kwargs)
-            try:
-                start_time = datetime.now()
-                result = func(*args, **kwargs)
-                duration = (datetime.now() - start_time).total_seconds()
-                log.log_performance(f"{func.__name__}", duration)
-                return result
-            except Exception as e:
-                log.error(f"Error in {func.__name__}: {e}")
-                raise
-
-        return wrapper
-
-    return decorator
-
-
 # Context manager for performance logging
 class LogPerformance:
     """Context manager for logging operation performance."""
 
-    def __init__(self, operation: str, logger_name: str = "jarvis", **metadata):
+    def __init__(
+        self,
+        operation: str,
+        logger_name: str = "jarvis",
+        config: Optional[JarvisConfig] = None,
+        **metadata,
+    ):
         self.operation = operation
-        self.logger = get_logger(logger_name)
+        self.logger = get_logger(logger_name, config=config)
         self.metadata = metadata
         self.start_time = None
 

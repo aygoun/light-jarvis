@@ -25,12 +25,19 @@ class JarvisAssistant:
         self.system_prompt = """You are Jarvis, an AI assistant similar to the one from Iron Man. 
 You are helpful, intelligent, and can manage emails and calendar events.
 
-You have access to the following tools:
-- Gmail: Read emails, send emails
-- Google Calendar: List events, create events
+You have access to the following tools and MUST use them when appropriate:
+- gmail_read_emails: Read and search emails from Gmail
+- calendar_list_events: List upcoming calendar events
 
-Always be very concise and helpful. When using tools, explain what you're doing.
-If you need to use multiple tools, do so efficiently."""
+IMPORTANT: When a user asks about emails, calendar events, or any task that requires accessing their data, you MUST use the appropriate tool. Do not make up or simulate responses - always call the actual tools to get real data.
+
+Examples of when to use tools:
+- "Check my emails" → use gmail_read_emails
+- "What's on my calendar?" → use calendar_list_events
+- "Do I have any meetings today?" → use calendar_list_events
+- "Show me recent emails" → use gmail_read_emails
+
+Always be concise and helpful. When using tools, briefly explain what you're doing."""
 
     async def initialize(self):
         """Initialize the assistant and connect to services."""
@@ -64,6 +71,9 @@ If you need to use multiple tools, do so efficiently."""
 
             # Convert tools to LLM format
             llm_tools = self._convert_tools_for_llm(tools)
+            self.logger.debug(
+                f"🔧 Converted {len(llm_tools) if llm_tools else 0} tools for LLM: {[tool['function']['name'] for tool in llm_tools] if llm_tools else []}"
+            )
 
             # Get LLM response
             start_time = datetime.now()
@@ -165,13 +175,24 @@ If you need to use multiple tools, do so efficiently."""
                     "send",
                     "check",
                     "create",
+                    "event",
+                    "events",
+                    "meeting",
+                    "meetings",
+                    "next",
+                    "upcoming",
+                    "today",
+                    "tomorrow",
+                    "list",
+                    "show",
+                    "tell",
                 ]
             )
 
-            if needs_tools and llm_tools:
-                # For tool-requiring requests, use non-streaming first to get tool calls
+            if llm_tools:
+                # Always use non-streaming mode when tools are available to allow tool calls
                 self.logger.info(
-                    "🛠️  Command may require tools, using non-streaming mode"
+                    f"🛠️  Tools available (needs_tools={needs_tools}), using non-streaming mode to enable tool calling"
                 )
 
                 # Get LLM response with potential tool calls

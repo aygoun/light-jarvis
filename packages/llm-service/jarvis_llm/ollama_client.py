@@ -42,12 +42,16 @@ class OllamaClient:
             request_data["tools"] = tools
 
         try:
+            self.logger.debug(
+                f"🔧 Sending request with {len(tools) if tools else 0} tools"
+            )
             response = self.client.chat(
                 model=self.config.model,
                 messages=ollama_messages,
                 tools=tools if tools else None,
                 options={"temperature": self.config.temperature, **kwargs},
             )
+            self.logger.debug(f"📥 Raw Ollama response: {response}")
             return self._parse_response(response)
         except Exception as e:
             raise RuntimeError(f"Ollama request failed: {e}")
@@ -115,13 +119,24 @@ class OllamaClient:
         # Parse tool calls if present
         if "tool_calls" in response.get("message", {}):
             for tool_call in response["message"]["tool_calls"]:
-                tool_calls.append(
-                    ToolCall(
-                        id=tool_call.get("id", ""),
-                        name=tool_call["function"]["name"],
-                        arguments=json.loads(tool_call["function"]["arguments"]),
+                try:
+                    # Handle arguments - they might be a string or already a dict
+                    arguments = tool_call["function"]["arguments"]
+                    if isinstance(arguments, str):
+                        arguments = json.loads(arguments)
+                    elif not isinstance(arguments, dict):
+                        arguments = {}
+
+                    tool_calls.append(
+                        ToolCall(
+                            id=tool_call.get("id", ""),
+                            name=tool_call["function"]["name"],
+                            arguments=arguments,
+                        )
                     )
-                )
+                except (KeyError, json.JSONDecodeError, TypeError) as e:
+                    self.logger.warning(f"⚠️  Failed to parse tool call: {e}")
+                    continue
 
         return LLMResponse(
             content=content,

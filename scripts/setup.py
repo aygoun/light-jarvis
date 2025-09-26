@@ -55,7 +55,7 @@ def main():
 
         if result.returncode != 0:
             print("📥 Pulling Mistral model...")
-            if not run_command("ollama pull mistral:7b"):
+            if not run_command("ollama pull llama3.2:3b"):
                 print("⚠️  Failed to pull Mistral model, but continuing...")
         else:
             print("✅ Mistral model available")

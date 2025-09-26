@@ -28,24 +28,56 @@ def event_loop():
 
 @pytest.fixture
 def mock_config():
-    """Mock configuration for testing."""
-    from jarvis_shared.config import JarvisConfig, OllamaConfig, MCPConfig, GoogleConfig
+    """Mock configuration for testing using TOML values."""
+    from jarvis_shared.config import (
+        JarvisConfig,
+        OllamaConfig,
+        MCPConfig,
+        GoogleConfig,
+        GeneralConfig,
+        LoggingConfig,
+    )
 
     config = Mock(spec=JarvisConfig)
+
+    # Ollama configuration from TOML
     config.ollama = Mock(spec=OllamaConfig)
     config.ollama.host = "http://localhost:11434"
-    config.ollama.model = "mistral:7b"
+    config.ollama.model = "llama3.2:3b"
     config.ollama.temperature = 0.1
     config.ollama.timeout = 120
 
+    # MCP configuration from TOML
     config.mcp = Mock(spec=MCPConfig)
     config.mcp.host = "localhost"
-    config.mcp.port = 8000
+    config.mcp.port = 3000  # Updated to match TOML
     config.mcp.timeout = 30
 
+    # Google configuration from TOML
     config.google = Mock(spec=GoogleConfig)
-    config.google.credentials_file = "/tmp/test_credentials.json"
-    config.google.token_file = "/tmp/test_token.json"
+    config.google.credentials_file = "~/.jarvis/google_credentials.json"
+    config.google.token_file = "~/.jarvis/google_token.json"
+    config.google.scopes = [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "https://www.googleapis.com/auth/calendar.events",
+    ]
+
+    # General configuration from TOML
+    config.general = Mock(spec=GeneralConfig)
+    config.general.debug = False
+    config.general.log_level = "DEBUG"
+
+    # Logging configuration from TOML
+    config.logging = Mock(spec=LoggingConfig)
+    config.logging.level = "INFO"
+    config.logging.dir = "./logs"
+    config.logging.console = False
+    config.logging.file = True
+    config.logging.rich = True
+    config.logging.max_size = 10485760
+    config.logging.backup_count = 5
+    config.logging.date_format = "%Y-%m-%d %H:%M:%S"
 
     return config
 
@@ -72,7 +104,7 @@ def mock_ollama_client():
     client = AsyncMock()
     client.chat = AsyncMock()
     client.chat_stream = AsyncMock()
-    client.list_models = Mock(return_value=["mistral:7b", "llama3.1:8b"])
+    client.list_models = Mock(return_value=["llama3.2:3b", "llama3.1:8b"])
     client.pull_model = Mock(return_value=True)
     return client
 
@@ -122,7 +154,7 @@ def sample_llm_response():
                 arguments={"query": "unread", "max_results": 5},
             )
         ],
-        model="mistral:7b",
+        model="llama3.2:3b",
         usage={"prompt_tokens": 50, "completion_tokens": 25},
     )
 

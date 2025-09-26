@@ -88,10 +88,10 @@ class TestLLMResponse:
 
     def test_simple_response(self):
         """Test simple LLM response without tool calls."""
-        response = LLMResponse(content="Hello! How can I help?", model="mistral:7b")
+        response = LLMResponse(content="Hello! How can I help?", model="llama3.2:3b")
 
         assert response.content == "Hello! How can I help?"
-        assert response.model == "mistral:7b"
+        assert response.model == "llama3.2:3b"
         assert response.tool_calls == []
         assert response.usage == {}
 
@@ -102,7 +102,7 @@ class TestLLMResponse:
         response = LLMResponse(
             content="I'll check your emails.",
             tool_calls=tool_calls,
-            model="mistral:7b",
+            model="llama3.2:3b",
             usage={"tokens": 100},
         )
 

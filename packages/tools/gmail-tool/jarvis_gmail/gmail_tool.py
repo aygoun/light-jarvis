@@ -1,5 +1,8 @@
 """Gmail tool implementation for MCP integration."""
 
+import json
+import os
+from pathlib import Path
 from typing import Dict, Any, List
 
 from jarvis_shared.logger import get_logger
@@ -85,40 +88,24 @@ class GmailTool:
             return {"success": False, "error": "Failed to send email"}
 
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
-        """Get tool definitions for MCP registration."""
-        return [
-            {
-                "name": "gmail_read_emails",
-                "description": "Read emails from Gmail",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "Search query for emails (e.g., 'from:john@example.com', 'is:unread')",
-                        },
-                        "max_results": {
-                            "type": "integer",
-                            "description": "Maximum number of emails to return",
-                            "default": 10,
-                        },
-                    },
-                },
-            },
-            {
-                "name": "gmail_send_email",
-                "description": "Send an email via Gmail",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "to": {
-                            "type": "string",
-                            "description": "Recipient email address",
-                        },
-                        "subject": {"type": "string", "description": "Email subject"},
-                        "body": {"type": "string", "description": "Email body content"},
-                    },
-                    "required": ["to", "subject", "body"],
-                },
-            },
-        ]
+        """Get tool definitions for MCP registration from tools.json."""
+        try:
+            # Find the tools.json file relative to this file
+            current_file = Path(__file__).resolve()
+            # Go up: gmail_tool.py -> jarvis_gmail -> gmail-tool -> tools -> packages -> jarvis -> config
+            tools_json_path = (
+                current_file.parent.parent.parent.parent.parent
+                / "config"
+                / "tools.json"
+            )
+
+            if tools_json_path.exists():
+                with open(tools_json_path, "r") as f:
+                    tools_config = json.load(f)
+                    return tools_config.get("gmail", [])
+            else:
+                self.logger.warning(f"Tools config file not found at {tools_json_path}")
+                return []
+        except Exception as e:
+            self.logger.error(f"Failed to load Gmail tool definitions: {e}")
+            return []

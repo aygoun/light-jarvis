@@ -2,14 +2,8 @@
 
 import base64
 import email
-import os
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
 
 from jarvis_shared.models import EmailMessage
 from jarvis_shared.logger import get_logger
@@ -19,66 +13,26 @@ from jarvis_shared.config import GoogleConfig
 class GmailClient:
     """Client for Gmail API operations."""
 
-    SCOPES = [
-        "https://www.googleapis.com/auth/gmail.readonly",
-        "https://www.googleapis.com/auth/gmail.send",
-        "https://www.googleapis.com/auth/gmail.compose",
-    ]
-
     def __init__(self, config: GoogleConfig):
         self.config = config
         self.logger = get_logger("jarvis.gmail.client")
         self.service = None
         self.credentials = None
 
-    async def authenticate(self) -> bool:
-        """Authenticate with Google Gmail API."""
-        try:
-            creds = None
-
-            # Load existing token
-            if self.config.token_file and os.path.exists(self.config.token_file):
-                creds = Credentials.from_authorized_user_file(
-                    self.config.token_file, self.SCOPES
-                )
-
-            # If no valid credentials, authenticate
-            if not creds or not creds.valid:
-                if creds and creds.expired and creds.refresh_token:
-                    creds.refresh(Request())
-                else:
-                    if not self.config.credentials_file or not os.path.exists(
-                        self.config.credentials_file
-                    ):
-                        self.logger.error("❌ Google credentials file not found")
-                        return False
-
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        self.config.credentials_file, self.SCOPES
-                    )
-                    creds = flow.run_local_server(port=0)
-
-                # Save credentials
-                if self.config.token_file:
-                    with open(self.config.token_file, "w") as token:
-                        token.write(creds.to_json())
-
-            self.credentials = creds
-            self.service = build("gmail", "v1", credentials=creds)
-            self.logger.info("✅ Gmail authentication successful")
-            return True
-
-        except Exception as e:
-            self.logger.error(f"❌ Gmail authentication failed: {e}")
-            return False
+    def is_authenticated(self) -> bool:
+        """Check if the Gmail service is authenticated and ready to use."""
+        return self.service is not None
 
     async def read_emails(
         self, query: str = "", max_results: int = 10
     ) -> List[EmailMessage]:
         """Read emails from Gmail."""
-        if not self.service:
-            if not await self.authenticate():
-                return []
+        if not self.is_authenticated():
+            self.logger.error("❌ Gmail service not authenticated")
+            self.logger.info(
+                "   Ensure GoogleAuthManager has authenticated the service"
+            )
+            return []
 
         try:
             if not self.service:
@@ -122,9 +76,10 @@ class GmailClient:
     async def send_email(self, to: str, subject: str, body: str) -> bool:
         """Send an email via Gmail."""
         return False  # Disable email sending for now
-        if not self.service:
-            if not await self.authenticate():
-                return False
+
+        if not self.is_authenticated():
+            self.logger.error("❌ Gmail service not authenticated")
+            return False
 
         try:
             self.logger.info(f"📤 Sending email to {to}")

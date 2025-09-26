@@ -1,10 +1,12 @@
 """MCP client for connecting to tools."""
 
 import json
-from typing import Any, Dict, List
+import aiohttp
+from typing import Any, Dict, List, Optional
 
 from jarvis_shared.config import MCPConfig
 from jarvis_shared.models import ToolCall, ToolResult
+from jarvis_shared.logger import get_logger
 
 
 class MCPClient:
@@ -12,106 +14,72 @@ class MCPClient:
 
     def __init__(self, config: MCPConfig):
         self.config = config
+        self.logger = get_logger("jarvis.mcp.client")
         self.tools_cache: Dict[str, Dict[str, Any]] = {}
-        self._session = None
+        self._session: Optional[aiohttp.ClientSession] = None
+        self.base_url = f"http://{config.host}:{config.port}"
 
     async def connect(self):
         """Connect to MCP server."""
-        # For now, we'll simulate MCP connection
-        # In a real implementation, this would establish connection to MCP server
-        self._session = {"connected": True}
-        await self._load_tools()
+        try:
+            self.logger.info(f"🔌 Connecting to MCP server at {self.base_url}")
+
+            # Create HTTP session
+            self._session = aiohttp.ClientSession()
+
+            # Test connection with health check
+            async with self._session.get(f"{self.base_url}/health") as response:
+                if response.status == 200:
+                    health_data = await response.json()
+                    self.logger.info(f"✅ Connected to MCP server: {health_data}")
+
+                    # Load available tools
+                    await self._load_tools()
+                    return True
+                else:
+                    raise Exception(
+                        f"Health check failed with status {response.status}"
+                    )
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to connect to MCP server: {e}")
+            if self._session:
+                await self._session.close()
+                self._session = None
+            raise
 
     async def disconnect(self):
         """Disconnect from MCP server."""
         if self._session:
+            self.logger.info("🔌 Disconnecting from MCP server")
+            await self._session.close()
             self._session = None
 
     async def _load_tools(self):
         """Load available tools from MCP server."""
-        # Simulate loading tools - in real implementation this would query MCP server
-        self.tools_cache = {
-            "gmail_read_emails": {
-                "name": "gmail_read_emails",
-                "description": "Read emails from Gmail",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "Search query for emails",
-                        },
-                        "max_results": {
-                            "type": "integer",
-                            "description": "Maximum number of emails to return",
-                            "default": 10,
-                        },
-                    },
-                },
-            },
-            "gmail_send_email": {
-                "name": "gmail_send_email",
-                "description": "Send an email via Gmail",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "to": {
-                            "type": "string",
-                            "description": "Recipient email address",
-                        },
-                        "subject": {"type": "string", "description": "Email subject"},
-                        "body": {"type": "string", "description": "Email body content"},
-                    },
-                    "required": ["to", "subject", "body"],
-                },
-            },
-            "calendar_list_events": {
-                "name": "calendar_list_events",
-                "description": "List calendar events",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "start_date": {
-                            "type": "string",
-                            "description": "Start date (YYYY-MM-DD)",
-                        },
-                        "end_date": {
-                            "type": "string",
-                            "description": "End date (YYYY-MM-DD)",
-                        },
-                        "max_results": {
-                            "type": "integer",
-                            "description": "Maximum number of events",
-                            "default": 10,
-                        },
-                    },
-                },
-            },
-            "calendar_create_event": {
-                "name": "calendar_create_event",
-                "description": "Create a new calendar event",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "title": {"type": "string", "description": "Event title"},
-                        "start_time": {
-                            "type": "string",
-                            "description": "Start time (ISO format)",
-                        },
-                        "end_time": {
-                            "type": "string",
-                            "description": "End time (ISO format)",
-                        },
-                        "description": {
-                            "type": "string",
-                            "description": "Event description",
-                        },
-                        "location": {"type": "string", "description": "Event location"},
-                    },
-                    "required": ["title", "start_time", "end_time"],
-                },
-            },
-        }
+        try:
+            if not self._session:
+                raise Exception("Not connected to MCP server")
+
+            self.logger.info("🔍 Loading tools from MCP server...")
+
+            async with self._session.get(f"{self.base_url}/tools") as response:
+                if response.status == 200:
+                    tools_data = await response.json()
+                    tools_list = tools_data.get("tools", [])
+
+                    # Convert list to dict for easier lookup
+                    self.tools_cache = {tool["name"]: tool for tool in tools_list}
+
+                    self.logger.info(
+                        f"✅ Loaded {len(self.tools_cache)} tools: {list(self.tools_cache.keys())}"
+                    )
+                else:
+                    raise Exception(f"Failed to load tools, status: {response.status}")
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to load tools: {e}")
+            raise
 
     async def list_tools(self) -> List[Dict[str, Any]]:
         """Get list of available tools."""
@@ -134,67 +102,97 @@ class MCPClient:
             )
 
         try:
-            # Simulate tool execution - in real implementation this would call MCP server
-            result = await self._simulate_tool_execution(
-                tool_call.name, tool_call.arguments
+            self.logger.info(
+                f"🔧 Executing tool: {tool_call.name} with args: {tool_call.arguments}"
             )
 
-            return ToolResult(
-                tool_call_id=tool_call.id, content=json.dumps(result), success=True
-            )
+            # Make HTTP request to MCP server
+            payload = {
+                "id": tool_call.id,
+                "name": tool_call.name,
+                "arguments": tool_call.arguments,
+            }
+
+            async with self._session.post(
+                f"{self.base_url}/tools/execute",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+            ) as response:
+
+                if response.status == 200:
+                    result_data = await response.json()
+
+                    self.logger.info(f"✅ Tool execution successful: {result_data}")
+
+                    return ToolResult(
+                        tool_call_id=tool_call.id,
+                        content=json.dumps(result_data),
+                        success=True,
+                    )
+                else:
+                    error_text = await response.text()
+                    self.logger.error(
+                        f"❌ Tool execution failed with status {response.status}: {error_text}"
+                    )
+
+                    return ToolResult(
+                        tool_call_id=tool_call.id,
+                        content="",
+                        success=False,
+                        error=f"HTTP {response.status}: {error_text}",
+                    )
+
         except Exception as e:
+            self.logger.error(f"❌ Tool execution error: {e}")
             return ToolResult(
                 tool_call_id=tool_call.id, content="", success=False, error=str(e)
             )
 
-    async def _simulate_tool_execution(
-        self, tool_name: str, arguments: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Simulate tool execution for development."""
-        # This is a placeholder - real implementation would route to actual tools
+    async def get_auth_status(self) -> Dict[str, Any]:
+        """Get authentication status from MCP server."""
+        try:
+            if not self._session:
+                await self.connect()
 
-        if tool_name == "gmail_read_emails":
-            return {
-                "emails": [
-                    {
-                        "id": "email_1",
-                        "subject": "Meeting tomorrow",
-                        "sender": "john@example.com",
-                        "body": "Don't forget about our meeting tomorrow at 2 PM.",
-                        "timestamp": "2024-01-15T10:30:00Z",
-                    }
-                ],
-                "total": 1,
-            }
+            async with self._session.get(f"{self.base_url}/auth/status") as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    return {"error": f"Failed to get auth status: {response.status}"}
 
-        elif tool_name == "gmail_send_email":
-            return {
-                "message_id": "sent_123",
-                "status": "sent",
-                "timestamp": "2024-01-15T11:00:00Z",
-            }
+        except Exception as e:
+            self.logger.error(f"❌ Failed to get auth status: {e}")
+            return {"error": str(e)}
 
-        elif tool_name == "calendar_list_events":
-            return {
-                "events": [
-                    {
-                        "id": "event_1",
-                        "title": "Team Meeting",
-                        "start_time": "2024-01-16T14:00:00Z",
-                        "end_time": "2024-01-16T15:00:00Z",
-                        "location": "Conference Room A",
-                    }
-                ],
-                "total": 1,
-            }
+    async def authenticate_google(self) -> Dict[str, Any]:
+        """Trigger Google authentication through MCP server."""
+        try:
+            if not self._session:
+                await self.connect()
 
-        elif tool_name == "calendar_create_event":
-            return {
-                "event_id": "created_456",
-                "status": "created",
-                "title": arguments.get("title", ""),
-                "start_time": arguments.get("start_time", ""),
-                "end_time": arguments.get("end_time", ""),
-            }
+            self.logger.info("🔐 Triggering Google authentication...")
 
-        return {"status": "executed", "tool": tool_name, "arguments": arguments}
+            async with self._session.post(f"{self.base_url}/auth/google") as response:
+                if response.status == 200:
+                    result = await response.json()
+                    self.logger.info(f"✅ Google authentication result: {result}")
+                    return result
+                else:
+                    error_text = await response.text()
+                    self.logger.error(f"❌ Google authentication failed: {error_text}")
+                    return {"error": f"HTTP {response.status}: {error_text}"}
+
+        except Exception as e:
+            self.logger.error(f"❌ Google authentication error: {e}")
+            return {"error": str(e)}
+
+    async def is_connected(self) -> bool:
+        """Check if connected to MCP server."""
+        if not self._session:
+            return False
+
+        try:
+            async with self._session.get(f"{self.base_url}/health") as response:
+                return response.status == 200
+        except:
+            return False

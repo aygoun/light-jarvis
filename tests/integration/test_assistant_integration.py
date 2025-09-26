@@ -67,7 +67,7 @@ class TestJarvisAssistantIntegration:
         llm_response = LLMResponse(
             content="I'll check your unread emails now.",
             tool_calls=[tool_call],
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         # Setup tool execution result
@@ -80,7 +80,7 @@ class TestJarvisAssistantIntegration:
         # Setup final LLM response
         final_response = LLMResponse(
             content="You have 1 unread email from boss@company.com with subject 'Important Meeting' about joining a meeting at 2 PM.",
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         # Configure mocks
@@ -142,7 +142,7 @@ class TestJarvisAssistantIntegration:
         llm_response = LLMResponse(
             content="I'll create the team standup meeting for you.",
             tool_calls=[tool_call],
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         # Setup tool execution result
@@ -155,7 +155,7 @@ class TestJarvisAssistantIntegration:
         # Setup final response
         final_response = LLMResponse(
             content="I've successfully created the 'Team Standup' meeting for January 16th from 9:00 AM to 9:30 AM.",
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         # Configure mocks
@@ -225,7 +225,7 @@ class TestJarvisAssistantIntegration:
         llm_response = LLMResponse(
             content="I'll try to help with that.",
             tool_calls=[tool_call],
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         # Setup failed tool result
@@ -239,7 +239,7 @@ class TestJarvisAssistantIntegration:
         # Setup recovery response
         recovery_response = LLMResponse(
             content="I'm sorry, I encountered an error while trying to help. The service appears to be temporarily unavailable.",
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         # Configure mocks
@@ -293,7 +293,7 @@ class TestJarvisAssistantIntegration:
         llm_response = LLMResponse(
             content="I'll check both your emails and calendar.",
             tool_calls=tool_calls,
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         # Setup tool results
@@ -310,7 +310,7 @@ class TestJarvisAssistantIntegration:
         # Setup final response
         final_response = LLMResponse(
             content="You have no new emails today, but you have 1 calendar event: a Meeting.",
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         # Configure mocks
@@ -343,7 +343,7 @@ class TestJarvisAssistantIntegration:
         # First interaction
         integrated_assistant.mcp_client.list_tools.return_value = []
         integrated_assistant.llm_service.chat.return_value = LLMResponse(
-            content="Hello! I'm Jarvis.", model="mistral:7b"
+            content="Hello! I'm Jarvis.", model="llama3.2:3b"
         )
 
         response1 = await integrated_assistant.process_command("Hello")
@@ -351,7 +351,7 @@ class TestJarvisAssistantIntegration:
         # Second interaction that references first
         integrated_assistant.llm_service.chat.return_value = LLMResponse(
             content="Yes, I just introduced myself as Jarvis, your AI assistant.",
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         response2 = await integrated_assistant.process_command(

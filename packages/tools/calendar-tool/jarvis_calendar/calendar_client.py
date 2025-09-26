@@ -1,13 +1,8 @@
 """Google Calendar API client for calendar operations."""
 
-import os
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
 
 from jarvis_shared.models import CalendarEvent
 from jarvis_shared.logger import get_logger
@@ -17,57 +12,15 @@ from jarvis_shared.config import GoogleConfig
 class CalendarClient:
     """Client for Google Calendar API operations."""
 
-    SCOPES = [
-        "https://www.googleapis.com/auth/calendar.readonly",
-        "https://www.googleapis.com/auth/calendar.events",
-    ]
-
     def __init__(self, config: GoogleConfig):
         self.config = config
         self.logger = get_logger("jarvis.calendar.client")
         self.service = None
         self.credentials = None
 
-    async def authenticate(self) -> bool:
-        """Authenticate with Google Calendar API."""
-        try:
-            creds = None
-
-            # Load existing token
-            if self.config.token_file and os.path.exists(self.config.token_file):
-                creds = Credentials.from_authorized_user_file(
-                    self.config.token_file, self.SCOPES
-                )
-
-            # If no valid credentials, authenticate
-            if not creds or not creds.valid:
-                if creds and creds.expired and creds.refresh_token:
-                    creds.refresh(Request())
-                else:
-                    if not self.config.credentials_file or not os.path.exists(
-                        self.config.credentials_file
-                    ):
-                        self.logger.error("❌ Google credentials file not found")
-                        return False
-
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        self.config.credentials_file, self.SCOPES
-                    )
-                    creds = flow.run_local_server(port=0)
-
-                # Save credentials
-                if self.config.token_file:
-                    with open(self.config.token_file, "w") as token:
-                        token.write(creds.to_json())
-
-            self.credentials = creds
-            self.service = build("calendar", "v3", credentials=creds)
-            self.logger.info("✅ Calendar authentication successful")
-            return True
-
-        except Exception as e:
-            self.logger.error(f"❌ Calendar authentication failed: {e}")
-            return False
+    def is_authenticated(self) -> bool:
+        """Check if the Calendar service is authenticated and ready to use."""
+        return self.service is not None
 
     async def list_events(
         self,
@@ -76,9 +29,12 @@ class CalendarClient:
         max_results: int = 10,
     ) -> List[CalendarEvent]:
         """List calendar events."""
-        if not self.service:
-            if not await self.authenticate():
-                return []
+        if not self.is_authenticated():
+            self.logger.error("❌ Calendar service not authenticated")
+            self.logger.info(
+                "   Ensure GoogleAuthManager has authenticated the service"
+            )
+            return []
 
         try:
             # Default to next 7 days if no dates specified
@@ -97,6 +53,7 @@ class CalendarClient:
             if not self.service:
                 raise RuntimeError("Calendar service not authenticated")
 
+            self.logger.info(f"🔍 Calendar service: {self.service}")
             # Get events
             events_result = (
                 self.service.events()
@@ -111,13 +68,18 @@ class CalendarClient:
                 .execute()
             )
 
+            self.logger.info(f"🔍 Events result: {events_result}")
+
             events = events_result.get("items", [])
             event_list = []
 
             for event in events:
+                self.logger.info(f"🔍 Event: {event}")
                 calendar_event = self._parse_calendar_event(event)
                 if calendar_event:
                     event_list.append(calendar_event)
+
+            self.logger.info(f"🔍 Event list: {event_list}")
 
             self.logger.info(f"✅ Retrieved {len(event_list)} events")
             return event_list
@@ -136,9 +98,9 @@ class CalendarClient:
         attendees: Optional[List[str]] = None,
     ) -> Optional[str]:
         """Create a new calendar event."""
-        if not self.service:
-            if not await self.authenticate():
-                return None
+        if not self.is_authenticated():
+            self.logger.error("❌ Calendar service not authenticated")
+            return None
 
         try:
             self.logger.info(f"📅 Creating event: {title}")

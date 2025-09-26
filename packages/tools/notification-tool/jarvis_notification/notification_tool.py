@@ -1,8 +1,8 @@
 """Notification tool implementation for MCP integration."""
 
+import json
+from pathlib import Path
 from typing import Dict, Any, List
-from datetime import datetime, timedelta
-import uuid
 
 from jarvis_shared.logger import get_logger
 from .notification_client import NotificationClient
@@ -56,9 +56,7 @@ class NotificationTool:
         """Schedule a reminder notification."""
         title = arguments.get("title", "Jarvis Reminder")
         message = arguments.get("message", "")
-        when = arguments.get(
-            "when", ""
-        )  # e.g., "in 5 minutes", "at 2:30 PM", "2024-01-15T14:30:00"
+        when = arguments.get("when", "")
 
         if not message:
             return {"success": False, "error": "Message is required"}
@@ -75,6 +73,8 @@ class NotificationTool:
             }
 
         # Generate reminder ID
+        import uuid
+
         reminder_id = str(uuid.uuid4())[:8]
 
         success = await self.client.schedule_reminder(
@@ -111,121 +111,74 @@ class NotificationTool:
 
         return {"success": True, "reminders": reminders, "total": len(reminders)}
 
-    def _parse_when(self, when: str) -> datetime:
-        """Parse when string into datetime."""
+    def _parse_when(self, when: str) -> Any:
+        """Parse the 'when' parameter into a datetime object."""
+        from datetime import datetime, timedelta
+        import re
+
+        when = when.lower().strip()
+
+        # Handle relative times
+        if when.startswith("in "):
+            # Parse "in X minutes/hours/days"
+            match = re.match(r"in (\d+)\s*(minute|minutes|hour|hours|day|days)", when)
+            if match:
+                value = int(match.group(1))
+                unit = match.group(2).rstrip("s")  # Remove 's' for singular
+
+                if unit == "minute":
+                    return datetime.now() + timedelta(minutes=value)
+                elif unit == "hour":
+                    return datetime.now() + timedelta(hours=value)
+                elif unit == "day":
+                    return datetime.now() + timedelta(days=value)
+
+        # Handle specific times
+        elif when in ["now", "immediately"]:
+            return datetime.now()
+
+        # Handle tomorrow
+        elif when == "tomorrow":
+            return datetime.now() + timedelta(days=1)
+
+        # Try to parse ISO format
         try:
-            when = when.lower().strip()
-            now = datetime.now()
+            return datetime.fromisoformat(when.replace("Z", "+00:00"))
+        except ValueError:
+            pass
 
-            # Handle "in X minutes/hours/days"
-            if when.startswith("in "):
-                parts = when[3:].split()
-                if len(parts) >= 2:
-                    try:
-                        amount = int(parts[0])
-                        unit = parts[1].lower()
+        # Try to parse common formats
+        try:
+            return datetime.strptime(when, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            pass
 
-                        if unit.startswith("minute"):
-                            return now + timedelta(minutes=amount)
-                        elif unit.startswith("hour"):
-                            return now + timedelta(hours=amount)
-                        elif unit.startswith("day"):
-                            return now + timedelta(days=amount)
-                        elif unit.startswith("second"):
-                            return now + timedelta(seconds=amount)
-                    except ValueError:
-                        pass
+        try:
+            return datetime.strptime(when, "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            pass
 
-            # Handle ISO format
-            if "T" in when or "-" in when:
-                try:
-                    # Try ISO format
-                    return datetime.fromisoformat(when.replace("Z", "+00:00"))
-                except ValueError:
-                    pass
-
-            # Handle relative times like "tomorrow", "next week"
-            if "tomorrow" in when:
-                return now + timedelta(days=1)
-            elif "next week" in when:
-                return now + timedelta(weeks=1)
-
-            return datetime.now()
-
-        except Exception as e:
-            self.logger.error(f"❌ Failed to parse when parameter: {e}")
-            return datetime.now()
+        return None
 
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
-        """Get tool definitions for MCP registration."""
-        return [
-            {
-                "name": "send_notification",
-                "description": "Send a system notification",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "title": {
-                            "type": "string",
-                            "description": "Notification title",
-                            "default": "Jarvis Notification",
-                        },
-                        "message": {
-                            "type": "string",
-                            "description": "Notification message",
-                        },
-                        "timeout": {
-                            "type": "integer",
-                            "description": "Notification timeout in seconds",
-                            "default": 10,
-                        },
-                    },
-                    "required": ["message"],
-                },
-            },
-            {
-                "name": "schedule_reminder",
-                "description": "Schedule a reminder notification",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "title": {
-                            "type": "string",
-                            "description": "Reminder title",
-                            "default": "Jarvis Reminder",
-                        },
-                        "message": {
-                            "type": "string",
-                            "description": "Reminder message",
-                        },
-                        "when": {
-                            "type": "string",
-                            "description": "When to remind (e.g., 'in 5 minutes', 'tomorrow', '2024-01-15T14:30:00')",
-                        },
-                    },
-                    "required": ["message", "when"],
-                },
-            },
-            {
-                "name": "cancel_reminder",
-                "description": "Cancel a scheduled reminder",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "reminder_id": {
-                            "type": "string",
-                            "description": "ID of the reminder to cancel",
-                        },
-                    },
-                    "required": ["reminder_id"],
-                },
-            },
-            {
-                "name": "list_reminders",
-                "description": "List all scheduled reminders",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                },
-            },
-        ]
+        """Get tool definitions for MCP registration from tools.json."""
+        try:
+            # Find the tools.json file relative to this file
+            current_file = Path(__file__).resolve()
+            # Go up: notification_tool.py -> jarvis_notification -> notification-tool -> tools -> packages -> jarvis -> config
+            tools_json_path = (
+                current_file.parent.parent.parent.parent.parent
+                / "config"
+                / "tools.json"
+            )
+
+            if tools_json_path.exists():
+                with open(tools_json_path, "r") as f:
+                    tools_config = json.load(f)
+                    return tools_config.get("notification", [])
+            else:
+                self.logger.warning(f"Tools config file not found at {tools_json_path}")
+                return []
+        except Exception as e:
+            self.logger.error(f"Failed to load Notification tool definitions: {e}")
+            return []

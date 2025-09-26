@@ -49,7 +49,7 @@ class TestJarvisAssistant:
         assistant.mcp_client.list_tools = AsyncMock(return_value=[])
         assistant.llm_service.chat = AsyncMock(
             return_value=LLMResponse(
-                content="Hello! I'm Jarvis, how can I help you?", model="mistral:7b"
+                content="Hello! I'm Jarvis, how can I help you?", model="llama3.2:3b"
             )
         )
 
@@ -82,7 +82,7 @@ class TestJarvisAssistant:
         llm_response = LLMResponse(
             content="I'll check your emails.",
             tool_calls=[tool_call],
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         tool_result = ToolResult(
@@ -92,7 +92,7 @@ class TestJarvisAssistant:
         )
 
         final_response = LLMResponse(
-            content="You have 1 unread email with subject 'Test'.", model="mistral:7b"
+            content="You have 1 unread email with subject 'Test'.", model="llama3.2:3b"
         )
 
         assistant.mcp_client.list_tools = AsyncMock(return_value=tools)
@@ -155,7 +155,7 @@ class TestJarvisAssistant:
         llm_response = LLMResponse(
             content="I'll check your emails.",
             tool_calls=[tool_call],
-            model="mistral:7b",
+            model="llama3.2:3b",
         )
 
         tool_result = ToolResult(
@@ -251,7 +251,7 @@ class TestJarvisAssistant:
         tool_call = ToolCall(id="call_456", name="failing_tool", arguments={})
 
         llm_response = LLMResponse(
-            content="I'll try to help.", tool_calls=[tool_call], model="mistral:7b"
+            content="I'll try to help.", tool_calls=[tool_call], model="llama3.2:3b"
         )
 
         # Tool execution fails
@@ -260,7 +260,7 @@ class TestJarvisAssistant:
         )
 
         final_response = LLMResponse(
-            content="Sorry, I encountered an error.", model="mistral:7b"
+            content="Sorry, I encountered an error.", model="llama3.2:3b"
         )
 
         assistant.mcp_client.list_tools = AsyncMock(return_value=tools)
@@ -284,7 +284,7 @@ class TestJarvisAssistant:
 
         assistant.mcp_client.list_tools = AsyncMock(return_value=[])
         assistant.llm_service.chat = AsyncMock(
-            return_value=LLMResponse(content="Response", model="mistral:7b")
+            return_value=LLMResponse(content="Response", model="llama3.2:3b")
         )
 
         # Execute
@@ -312,7 +312,7 @@ class TestJarvisAssistant:
 
         assistant.mcp_client.list_tools = AsyncMock(return_value=[])
         assistant.llm_service.chat = AsyncMock(
-            return_value=LLMResponse(content="Response", model="mistral:7b")
+            return_value=LLMResponse(content="Response", model="llama3.2:3b")
         )
 
         # Process multiple commands

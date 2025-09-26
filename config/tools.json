@@ -1,0 +1,184 @@
+{
+    "gmail": [
+        {
+            "name": "gmail_read_emails",
+            "description": "Read emails from Gmail",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query for emails"
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum number of emails to return",
+                        "default": 10
+                    }
+                }
+            }
+        },
+        {
+            "name": "gmail_send_email",
+            "description": "Send an email via Gmail",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "to": {
+                        "type": "string",
+                        "description": "Recipient email address"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Email subject"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Email body content"
+                    }
+                },
+                "required": [
+                    "to",
+                    "subject",
+                    "body"
+                ]
+            }
+        }
+    ],
+    "calendar": [
+        {
+            "name": "calendar_list_events",
+            "description": "List calendar events",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "start_date": {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)"
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)"
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum number of events",
+                        "default": 10
+                    }
+                }
+            }
+        },
+        {
+            "name": "calendar_create_event",
+            "description": "Create a new calendar event",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Event title"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "description": "Start time (ISO format)"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "description": "End time (ISO format)"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Event description"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Event location"
+                    }
+                },
+                "required": [
+                    "title",
+                    "start_time",
+                    "end_time"
+                ]
+            }
+        }
+    ],
+    "notification": [
+        {
+            "name": "send_notification",
+            "description": "Send a system notification",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Notification title",
+                        "default": "Jarvis Notification"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Notification message"
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "description": "Notification timeout in seconds",
+                        "default": 10
+                    }
+                },
+                "required": [
+                    "message"
+                ]
+            }
+        },
+        {
+            "name": "schedule_reminder",
+            "description": "Schedule a reminder notification",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Reminder title",
+                        "default": "Jarvis Reminder"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Reminder message"
+                    },
+                    "when": {
+                        "type": "string",
+                        "description": "When to remind (e.g., 'in 5 minutes', 'tomorrow', '2024-01-15T14:30:00')"
+                    }
+                },
+                "required": [
+                    "message",
+                    "when"
+                ]
+            }
+        },
+        {
+            "name": "cancel_reminder",
+            "description": "Cancel a scheduled reminder",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "reminder_id": {
+                        "type": "string",
+                        "description": "ID of the reminder to cancel"
+                    }
+                },
+                "required": [
+                    "reminder_id"
+                ]
+            }
+        },
+        {
+            "name": "list_reminders",
+            "description": "List all scheduled reminders",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    ]
+}

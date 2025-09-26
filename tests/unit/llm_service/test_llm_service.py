@@ -31,7 +31,7 @@ class TestLLMService:
     async def test_chat_with_ollama(self, llm_service, sample_messages):
         """Test chat with Ollama provider."""
         expected_response = LLMResponse(
-            content="Hello! How can I help?", model="mistral:7b"
+            content="Hello! How can I help?", model="llama3.2:3b"
         )
 
         llm_service.ollama_client.chat = AsyncMock(return_value=expected_response)
@@ -46,7 +46,7 @@ class TestLLMService:
         """Test chat with tools provided."""
         tools = [{"name": "test_tool", "description": "A test tool"}]
         expected_response = LLMResponse(
-            content="I'll use the tool.", model="mistral:7b"
+            content="I'll use the tool.", model="llama3.2:3b"
         )
 
         llm_service.ollama_client.chat = AsyncMock(return_value=expected_response)
@@ -119,7 +119,7 @@ class TestLLMService:
 
     def test_get_available_models(self, llm_service):
         """Test getting available models."""
-        expected_models = ["mistral:7b", "llama3.1:8b"]
+        expected_models = ["llama3.2:3b", "llama3.1:8b"]
         llm_service.ollama_client.list_models = Mock(return_value=expected_models)
 
         models = llm_service.get_available_models()
@@ -181,7 +181,7 @@ class TestLLMService:
     async def test_chat_kwargs_passed_through(self, llm_service, sample_messages):
         """Test that kwargs are passed through to underlying client."""
         llm_service.ollama_client.chat = AsyncMock(
-            return_value=LLMResponse(content="Response", model="mistral:7b")
+            return_value=LLMResponse(content="Response", model="llama3.2:3b")
         )
 
         await llm_service.chat(

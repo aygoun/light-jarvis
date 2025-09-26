@@ -1,5 +1,7 @@
 """Calendar tool implementation for MCP integration."""
 
+import json
+from pathlib import Path
 from typing import Dict, Any, List
 
 from jarvis_shared.logger import get_logger
@@ -22,8 +24,10 @@ class CalendarTool:
 
         try:
             if tool_name == "calendar_list_events":
+                self.logger.info(f"🔍 Listing events with arguments: {arguments}")
                 return await self._list_events(arguments)
             elif tool_name == "calendar_create_event":
+                self.logger.info(f"🔍 Creating event with arguments: {arguments}")
                 return await self._create_event(arguments)
             else:
                 raise ValueError(f"Unknown Calendar tool: {tool_name}")
@@ -37,6 +41,10 @@ class CalendarTool:
         start_date = arguments.get("start_date")
         end_date = arguments.get("end_date")
         max_results = arguments.get("max_results", 10)
+
+        self.logger.info(
+            f"🔍 Listing events with start_date: {start_date}, end_date: {end_date}, max_results: {max_results}"
+        )
 
         events = await self.client.list_events(start_date, end_date, max_results)
 
@@ -91,52 +99,24 @@ class CalendarTool:
             return {"success": False, "error": "Failed to create event"}
 
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
-        """Get tool definitions for MCP registration."""
-        return [
-            {
-                "name": "calendar_list_events",
-                "description": "List calendar events",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "start_date": {
-                            "type": "string",
-                            "description": "Start date (ISO format: YYYY-MM-DDTHH:MM:SS)",
-                        },
-                        "end_date": {
-                            "type": "string",
-                            "description": "End date (ISO format: YYYY-MM-DDTHH:MM:SS)",
-                        },
-                        "max_results": {
-                            "type": "integer",
-                            "description": "Maximum number of events",
-                            "default": 10,
-                        },
-                    },
-                },
-            },
-            {
-                "name": "calendar_create_event",
-                "description": "Create a new calendar event",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "title": {"type": "string", "description": "Event title"},
-                        "start_time": {
-                            "type": "string",
-                            "description": "Start time (ISO format: YYYY-MM-DDTHH:MM:SS)",
-                        },
-                        "end_time": {
-                            "type": "string",
-                            "description": "End time (ISO format: YYYY-MM-DDTHH:MM:SS)",
-                        },
-                        "description": {
-                            "type": "string",
-                            "description": "Event description",
-                        },
-                        "location": {"type": "string", "description": "Event location"},
-                    },
-                    "required": ["title", "start_time", "end_time"],
-                },
-            },
-        ]
+        """Get tool definitions for MCP registration from tools.json."""
+        try:
+            # Find the tools.json file relative to this file
+            current_file = Path(__file__).resolve()
+            # Go up: calendar_tool.py -> jarvis_calendar -> calendar-tool -> tools -> packages -> jarvis -> config
+            tools_json_path = (
+                current_file.parent.parent.parent.parent.parent
+                / "config"
+                / "tools.json"
+            )
+
+            if tools_json_path.exists():
+                with open(tools_json_path, "r") as f:
+                    tools_config = json.load(f)
+                    return tools_config.get("calendar", [])
+            else:
+                self.logger.warning(f"Tools config file not found at {tools_json_path}")
+                return []
+        except Exception as e:
+            self.logger.error(f"Failed to load Calendar tool definitions: {e}")
+            return []
