@@ -1,0 +1,36 @@
+# Default configuration for Jarvis AI Assistant
+
+[general]
+debug = false
+log_level = "INFO"
+
+[ollama]
+host = "http://localhost:11434"
+model = "mistral:7b"
+temperature = 0.1
+timeout = 120
+
+[mcp]
+host = "localhost"
+port = 8000
+timeout = 30
+
+[google]
+credentials_file = "~/.jarvis/google_credentials.json"
+token_file = "~/.jarvis/google_token.json"
+scopes = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events",
+]
+
+[logging]
+level = "INFO"
+dir = "./logs"
+console = false
+file = true
+rich = true
+max_size = 10485760  # 10MB
+backup_count = 5
+date_format = "%Y-%m-%d %H:%M:%S"

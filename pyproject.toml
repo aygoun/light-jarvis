@@ -33,12 +33,22 @@ build-backend = "hatchling.build"
 [tool.uv.workspace]
 members = [
     "packages/core",
-    "packages/shared"
+    "packages/shared",
+    "packages/llm-service",
+    "packages/mcp-server",
+    "packages/tools/gmail-tool",
+    "packages/tools/calendar-tool",
+    "packages/tools/notification-tool"
 ]
 
 [tool.uv.sources]
 jarvis-shared = { workspace = true }
 jarvis-core = { workspace = true }
+jarvis-llm = { workspace = true }
+jarvis-mcp = { workspace = true }
+jarvis-gmail = { workspace = true }
+jarvis-calendar = { workspace = true }
+jarvis-notification = { workspace = true }
 
 [tool.uv]
 dev-dependencies = [

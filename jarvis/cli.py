@@ -152,19 +152,19 @@ def setup():
     console.print(f"📊 Data directory: {config.data_dir}")
 
     # Check Ollama connection
-    from jarvis_core import OllamaClient
+    from jarvis_llm import LLMService
 
-    ollama_client = OllamaClient(config.ollama)
+    llm_service = LLMService(config.ollama)
 
     try:
-        models = ollama_client.list_models()
+        models = llm_service.get_available_models()
         console.print(f"✅ Ollama connected. Available models: {', '.join(models)}")
 
         if config.ollama.model not in [model.split(":")[0] for model in models]:
             console.print(f"⚠️  Model '{config.ollama.model}' not found.")
             if typer.confirm(f"Would you like to pull '{config.ollama.model}'?"):
                 console.print(f"📥 Pulling {config.ollama.model}...")
-                if ollama_client.pull_model(config.ollama.model):
+                if llm_service.pull_model(config.ollama.model):
                     console.print("✅ Model pulled successfully!")
                 else:
                     console.print("❌ Failed to pull model.")
@@ -196,12 +196,12 @@ def status():
     config = JarvisConfig()
 
     # Check Ollama
-    from jarvis_core import OllamaClient
+    from jarvis_llm import LLMService
 
-    ollama_client = OllamaClient(config.ollama)
+    llm_service = LLMService(config.ollama)
 
     try:
-        models = ollama_client.list_models()
+        models = llm_service.get_available_models()
         console.print(f"✅ Ollama: Connected ({len(models)} models available)")
     except Exception as e:
         console.print(f"❌ Ollama: {e}")

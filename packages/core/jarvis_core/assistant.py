@@ -7,8 +7,8 @@ from jarvis_shared.config import JarvisConfig
 from jarvis_shared.models import Message, MessageRole
 from jarvis_shared.logger import get_logger, LogPerformance
 
-from .llm_client import OllamaClient
-from .mcp_client import MCPClient
+from jarvis_llm import LLMService
+from jarvis_mcp import MCPClient
 
 
 class JarvisAssistant:
@@ -17,7 +17,7 @@ class JarvisAssistant:
     def __init__(self, config: JarvisConfig):
         self.config = config
         self.logger = get_logger("jarvis.assistant")
-        self.llm_client = OllamaClient(config.ollama)
+        self.llm_service = LLMService(config.ollama)
         self.mcp_client = MCPClient(config.mcp)
         self.conversation_history: List[Message] = []
 
@@ -67,7 +67,7 @@ If you need to use multiple tools, do so efficiently."""
 
             # Get LLM response
             start_time = datetime.now()
-            llm_response = await self.llm_client.chat(
+            llm_response = await self.llm_service.chat(
                 messages=self.conversation_history,
                 tools=llm_tools if llm_tools else None,
             )
@@ -110,7 +110,7 @@ If you need to use multiple tools, do so efficiently."""
 
                 # If we had tool calls, get a final response from LLM with results
                 if tool_results:
-                    final_response = await self.llm_client.chat(
+                    final_response = await self.llm_service.chat(
                         messages=self.conversation_history
                         + [
                             Message(
@@ -176,7 +176,7 @@ If you need to use multiple tools, do so efficiently."""
 
                 # Get LLM response with potential tool calls
                 start_time = datetime.now()
-                llm_response = await self.llm_client.chat(
+                llm_response = await self.llm_service.chat(
                     messages=self.conversation_history,
                     tools=llm_tools,
                 )
@@ -222,7 +222,7 @@ If you need to use multiple tools, do so efficiently."""
                     )
 
                     full_response = ""
-                    async for token in self.llm_client.chat_stream(
+                    async for token in self.llm_service.chat_stream(
                         messages=self.conversation_history + [summary_message]
                     ):
                         full_response += token
@@ -237,7 +237,7 @@ If you need to use multiple tools, do so efficiently."""
                 else:
                     # No tool calls, just stream the regular response
                     full_response = ""
-                    async for token in self.llm_client.chat_stream(
+                    async for token in self.llm_service.chat_stream(
                         messages=self.conversation_history
                     ):
                         full_response += token
@@ -254,7 +254,7 @@ If you need to use multiple tools, do so efficiently."""
                 self.logger.info("💬 Pure conversation mode, using streaming")
 
                 full_response = ""
-                async for token in self.llm_client.chat_stream(
+                async for token in self.llm_service.chat_stream(
                     messages=self.conversation_history
                 ):
                     full_response += token

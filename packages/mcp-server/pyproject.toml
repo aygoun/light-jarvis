@@ -1,19 +1,17 @@
 [project]
-name = "jarvis-core"
+name = "jarvis-mcp"
 version = "0.1.0"
-description = "Core Jarvis assistant logic"
+description = "MCP server for Jarvis tool orchestration"
 dependencies = [
     "jarvis-shared",
-    "jarvis-llm",
-    "jarvis-mcp",
-    "rich>=13.7.0",
+    "mcp>=1.0.0",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
 ]
 requires-python = ">=3.11"
 
 [tool.uv.sources]
 jarvis-shared = { workspace = true }
-jarvis-llm = { workspace = true }
-jarvis-mcp = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

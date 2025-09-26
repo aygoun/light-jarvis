@@ -1,19 +1,18 @@
 [project]
-name = "jarvis-core"
+name = "jarvis-gmail"
 version = "0.1.0"
-description = "Core Jarvis assistant logic"
+description = "Gmail integration tool for Jarvis"
 dependencies = [
     "jarvis-shared",
-    "jarvis-llm",
-    "jarvis-mcp",
-    "rich>=13.7.0",
+    "google-auth>=2.29.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-api-python-client>=2.140.0",
 ]
 requires-python = ">=3.11"
 
 [tool.uv.sources]
 jarvis-shared = { workspace = true }
-jarvis-llm = { workspace = true }
-jarvis-mcp = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

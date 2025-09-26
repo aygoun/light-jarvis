@@ -1,19 +1,16 @@
 [project]
-name = "jarvis-core"
+name = "jarvis-notification"
 version = "0.1.0"
-description = "Core Jarvis assistant logic"
+description = "Notification and reminder tool for Jarvis"
 dependencies = [
     "jarvis-shared",
-    "jarvis-llm",
-    "jarvis-mcp",
-    "rich>=13.7.0",
+    "plyer>=2.1.0",  # Cross-platform notifications
+    "schedule>=1.2.0",  # Task scheduling
 ]
 requires-python = ">=3.11"
 
 [tool.uv.sources]
 jarvis-shared = { workspace = true }
-jarvis-llm = { workspace = true }
-jarvis-mcp = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
