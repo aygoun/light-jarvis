@@ -103,8 +103,9 @@ class GoogleAuthManager:
                 access_type="offline", include_granted_scopes="true"
             )
 
-            self.logger.info(f"🌐 Please visit this URL to authorize the application:")
-            self.logger.info(f"   {auth_url}")
+            self.logger.info(
+                f"🌐 Please visit this URL to authorize the application: {auth_url}"
+            )
             self.logger.info(
                 f"🔄 Waiting for OAuth callback at {self.config.oauth_callback_url}"
             )
@@ -129,7 +130,7 @@ class GoogleAuthManager:
                     )
             else:
                 # Fallback: use run_local_server on a different port
-                temp_port = 3002
+                temp_port = 3001
                 self.logger.info(f"🔄 Using temporary OAuth server on port {temp_port}")
                 creds = flow.run_local_server(
                     host=self.config.oauth_callback_host,

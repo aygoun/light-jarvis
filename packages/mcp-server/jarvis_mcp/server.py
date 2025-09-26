@@ -451,6 +451,8 @@ class MCPServer:
         # Now initialize authentication (server is running for OAuth callbacks)
         try:
             await self._initialize_auth()
+            # Re-initialize tools with proper config after authentication
+            await self._reinitialize_tools_with_auth()
         except Exception as e:
             self.logger.error(f"❌ Failed to initialize authentication: {e}")
             self.logger.info("🔄 Server will continue without authentication")
@@ -530,3 +532,47 @@ class MCPServer:
         except Exception as e:
             self.logger.error(f"❌ Failed to register tools: {e}")
             raise Exception(f"Failed to register tools: {e}")
+
+    async def _reinitialize_tools_with_auth(self):
+        """Re-initialize tools with proper authentication after auth is complete."""
+        try:
+            if not self.jarvis_config:
+                self.logger.warning(
+                    "⚠️  No Jarvis config available for tool re-initialization"
+                )
+                return
+
+            self.logger.info("🔄 Re-initializing tools with authentication...")
+
+            # Import tool classes
+            from jarvis_gmail.gmail_tool import GmailTool
+            from jarvis_calendar.calendar_tool import CalendarTool
+
+            # Re-initialize tool instances with proper config
+            self.gmail_tool = GmailTool(self.jarvis_config.google)
+            self.calendar_tool = CalendarTool(self.jarvis_config.google)
+
+            # Update the tool clients with authenticated services
+            if self.google_auth and self.google_auth.is_authenticated():
+                gmail_service = self.google_auth.get_gmail_service()
+                calendar_service = self.google_auth.get_calendar_service()
+
+                if gmail_service and self.gmail_tool:
+                    self.gmail_tool.client.service = gmail_service
+                    self.logger.debug(
+                        "✅ Gmail tool client updated with authenticated service"
+                    )
+
+                if calendar_service and self.calendar_tool:
+                    self.calendar_tool.client.service = calendar_service
+                    self.logger.debug(
+                        "✅ Calendar tool client updated with authenticated service"
+                    )
+
+            # Update the clients with authenticated services
+            await self._update_clients_with_auth()
+
+            self.logger.info("✅ Tools re-initialized with authentication")
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to re-initialize tools: {e}")

@@ -123,10 +123,28 @@ class JarvisConfig(BaseSettings):
             toml_path = Path("config/default.toml")
             if toml_path.exists():
                 with open(toml_path, "r") as f:
-                    return toml.load(f)
+                    config = toml.load(f)
+                    # Expand tilde paths in the configuration
+                    return self._expand_tilde_paths(config)
         except Exception as e:
             print(f"Warning: Could not load TOML config: {e}")
         return {}
+
+    def _expand_tilde_paths(self, config: dict) -> dict:
+        """Expand tilde (~) paths in configuration dictionary."""
+        import os
+
+        def expand_paths_recursive(obj):
+            if isinstance(obj, dict):
+                return {k: expand_paths_recursive(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [expand_paths_recursive(item) for item in obj]
+            elif isinstance(obj, str) and obj.startswith("~/"):
+                return os.path.expanduser(obj)
+            else:
+                return obj
+
+        return expand_paths_recursive(config)
 
     def _deep_merge(self, base: dict, override: dict) -> dict:
         """Deep merge two dictionaries, with override taking precedence."""
