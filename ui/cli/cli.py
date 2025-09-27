@@ -131,7 +131,7 @@ async def _async_chat(config: JarvisConfig, use_streaming: bool = True):
                 break
             except Exception as e:
                 console.print(f"❌ Error: {e}")
-                if config.debug:
+                if config.general.debug:
                     console.print_exception()
 
     finally:
@@ -202,7 +202,9 @@ def status():
 
     try:
         models = llm_service.get_available_models()
-        console.print(f"✅ Ollama: Connected ({len(models)} models available)")
+        console.print(
+            f"✅ Ollama: Connected {len(models)} models available:", ", ".join(models)
+        )
     except Exception as e:
         console.print(f"❌ Ollama: {e}")
 

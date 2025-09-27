@@ -149,7 +149,7 @@ class OllamaClient:
         """List available models."""
         try:
             models = self.client.list()
-            return [model["name"] for model in models["models"]]
+            return [model["model"] for model in models["models"]]
         except Exception as e:
             raise RuntimeError(f"Failed to list models: {e}")
 

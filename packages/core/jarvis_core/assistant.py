@@ -37,7 +37,7 @@ Examples of when to use tools:
 - "Do I have any meetings today?" → use calendar_list_events
 - "Show me recent emails" → use gmail_read_emails
 
-Always be concise and helpful. When using tools, briefly explain what you're doing."""
+Always be concise and helpful. When using tools, very briefly explain what you're doing."""
 
     async def initialize(self):
         """Initialize the assistant and connect to services."""
