@@ -44,5 +44,11 @@ max_len = 448
 [tts]
 engine = "edge"
 voice = "en-US-ChristopherNeural"
-rate = 40
+rate = 50
 volume = 1
+
+[hue]
+bridge_ip = "192.168.1.10"
+username = "HwsEzhoVGhxwqDPKyBEBe1eXzfuzE-G0fa3O6arJ"
+auto_discover = true
+timeout = 10

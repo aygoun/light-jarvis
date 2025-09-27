@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle, AlertCircle, XCircle, RefreshCw } from "lucide-react";
-import { jarvisAPI, ServiceHealth } from "@/lib/api";
+import { ServiceHealth } from "@/types";
+import { serviceManager } from "@/services/ServiceManager";
 
 interface StatusIndicatorProps {
   className?: string;
@@ -23,7 +24,7 @@ export function StatusIndicator({
       setIsLoading(true);
       setError(null);
 
-      const healthData = await jarvisAPI.checkAllServicesHealth();
+      const healthData = await serviceManager.status.getServicesStatus();
 
       // Check if all services are healthy
       const servicesHealthy = Object.values(healthData).every(

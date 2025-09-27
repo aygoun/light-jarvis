@@ -81,7 +81,9 @@ class STTService:
 
         except Exception as e:
             self.logger.error(f"Transcription failed: {e}")
-            raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Transcription failed: {str(e)}"
+            )
 
         finally:
             # Clean up temporary files
@@ -126,7 +128,9 @@ class STTService:
 
         except Exception as e:
             self.logger.error(f"Raw audio transcription failed: {e}")
-            raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Transcription failed: {str(e)}"
+            )
 
     def get_health_status(self) -> Dict[str, Any]:
         """Get service health status."""
@@ -176,19 +180,22 @@ class STTService:
             # Use ffmpeg to convert to WAV format
             cmd = [
                 "/opt/homebrew/bin/ffmpeg",
-                "-i", input_path,
-                "-ar", "16000",  # Sample rate 16kHz
-                "-ac", "1",      # Mono
-                "-y",            # Overwrite output file
+                "-i",
+                input_path,
+                "-ar",
+                "16000",  # Sample rate 16kHz
+                "-ac",
+                "1",  # Mono
+                "-y",  # Overwrite output file
+                "-c:a",
+                "pcm_s16le",
                 wav_path,
             ]
 
             self.logger.debug(f"Running ffmpeg command: {' '.join(cmd)}")
 
             # Run ffmpeg
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=30
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode != 0:
                 self.logger.error(f"ffmpeg failed: {result.stderr}")
@@ -220,7 +227,9 @@ class STTService:
             # Load audio with librosa
             audio_data, sample_rate = librosa.load(input_path, sr=16000, mono=True)
 
-            self.logger.debug(f"Loaded audio: {len(audio_data)} samples at {sample_rate}Hz")
+            self.logger.debug(
+                f"Loaded audio: {len(audio_data)} samples at {sample_rate}Hz"
+            )
 
             # Create temporary WAV file
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:

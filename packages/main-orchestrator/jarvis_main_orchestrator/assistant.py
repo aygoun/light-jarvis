@@ -28,37 +28,8 @@ class JarvisAssistant:
         self.conversation_history: List[Message] = []
 
         # System prompt
-        self.system_prompt = """You are Jarvis, an AI assistant similar to the one from Iron Man. 
-You are helpful, intelligent, and can manage emails, calendar events, and notifications.
-
-You have access to the following tools, but ONLY use them when the user explicitly requests specific actions:
-- gmail_read_emails: Read and search emails from Gmail
-- gmail_send_email: Send emails via Gmail
-- calendar_list_events: List upcoming calendar events
-- calendar_create_event: Create new calendar events
-- send_notification: Send system notifications
-- schedule_reminder: Schedule reminder notifications
-- cancel_reminder: Cancel scheduled reminders
-- list_reminders: List all scheduled reminders
-
-IMPORTANT: 
-- For general conversation, greetings, questions, or casual chat, respond directly with text - DO NOT use tools
-- ONLY use tools when the user explicitly asks you to perform specific actions like "check my emails", "what's on my calendar", "send me a notification", etc.
-- Do not use tools for simple greetings, questions, or conversational responses
-
-Examples of when to use tools:
-- "Check my emails" → use gmail_read_emails
-- "What's on my calendar?" → use calendar_list_events
-- "Send me a reminder" → use schedule_reminder
-- "What reminders do I have?" → use list_reminders
-
-Examples of when NOT to use tools:
-- "Hello" → respond with text
-- "How are you?" → respond with text
-- "What can you do?" → respond with text
-- "Tell me a joke" → respond with text
-
-Always be concise and helpful. When using tools, very briefly explain what you're doing."""
+        with open("config/prompt.txt", "r", encoding="utf-8") as f:
+            self.system_prompt = f.read()
 
     async def initialize(self) -> None:
         """Initialize the assistant and connect to all services."""
@@ -176,7 +147,7 @@ Always be concise and helpful. When using tools, very briefly explain what you'r
             "command_streaming", "jarvis.assistant", command_length=len(user_input)
         ):
             self.logger.info(
-                f"💬 Processing streaming command: {user_input[:100]}{'...' if len(user_input) > 100 else ''}"
+                f"💬 Processing strea`ming command: {user_input[:100]}{'...' if len(user_input) > 100 else ''}"
             )
 
             # Add user message to conversation
@@ -214,6 +185,13 @@ Always be concise and helpful. When using tools, very briefly explain what you'r
                     "notification",
                     "reminder",
                     "reminders",
+                    "hue",
+                    "lights",
+                    "light",
+                    "color",
+                    "brightness",
+                    "turn on",
+                    "turn off",
                 ]
             )
 

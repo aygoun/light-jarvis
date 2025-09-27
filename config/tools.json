@@ -180,5 +180,429 @@
                 "properties": {}
             }
         }
+    ],
+    "hue": [
+        {
+            "name": "hue_list_lights",
+            "description": "List all Philips Hue lights",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        {
+            "name": "hue_get_light_by_name",
+            "description": "Get details of a specific light by name",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "light_name": {
+                        "type": "string",
+                        "description": "Name of the light to get"
+                    }
+                },
+                "required": [
+                    "light_name"
+                ]
+            }
+        },
+        {
+            "name": "hue_get_light",
+            "description": "Get details of a specific light",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "light_id": {
+                        "type": "string",
+                        "description": "ID of the light to get"
+                    }
+                },
+                "required": [
+                    "light_id"
+                ]
+            }
+        },
+        {
+            "name": "hue_turn_on_light",
+            "description": "Turn on a light with optional brightness, color, or color temperature",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "light_id": {
+                        "type": "string",
+                        "description": "ID of the light to turn on"
+                    },
+                    "brightness": {
+                        "type": "integer",
+                        "description": "Brightness level (1-254)",
+                        "minimum": 1,
+                        "maximum": 254
+                    },
+                    "hue": {
+                        "type": "integer",
+                        "description": "Hue value (0-65535)",
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "saturation": {
+                        "type": "integer",
+                        "description": "Saturation value (0-254)",
+                        "minimum": 0,
+                        "maximum": 254
+                    },
+                    "color_temp": {
+                        "type": "integer",
+                        "description": "Color temperature (153-500)",
+                        "minimum": 153,
+                        "maximum": 500
+                    },
+                    "r": {
+                        "type": "integer",
+                        "description": "Red value for RGB color (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    },
+                    "g": {
+                        "type": "integer",
+                        "description": "Green value for RGB color (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    },
+                    "b": {
+                        "type": "integer",
+                        "description": "Blue value for RGB color (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    }
+                },
+                "required": [
+                    "light_id"
+                ]
+            }
+        },
+        {
+            "name": "hue_turn_off_light",
+            "description": "Turn off a light",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "light_id": {
+                        "type": "string",
+                        "description": "ID of the light to turn off"
+                    }
+                },
+                "required": [
+                    "light_id"
+                ]
+            }
+        },
+        {
+            "name": "hue_set_brightness",
+            "description": "Set the brightness of a light",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "light_id": {
+                        "type": "string",
+                        "description": "ID of the light"
+                    },
+                    "brightness": {
+                        "type": "integer",
+                        "description": "Brightness level (1-254)",
+                        "minimum": 1,
+                        "maximum": 254
+                    }
+                },
+                "required": [
+                    "light_id",
+                    "brightness"
+                ]
+            }
+        },
+        {
+            "name": "hue_set_color",
+            "description": "Set the color of a light using hue and saturation",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "light_id": {
+                        "type": "string",
+                        "description": "ID of the light"
+                    },
+                    "hue": {
+                        "type": "integer",
+                        "description": "Hue value (0-65535)",
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "saturation": {
+                        "type": "integer",
+                        "description": "Saturation value (0-254)",
+                        "minimum": 0,
+                        "maximum": 254
+                    }
+                },
+                "required": [
+                    "light_id",
+                    "hue",
+                    "saturation"
+                ]
+            }
+        },
+        {
+            "name": "hue_set_color_temp",
+            "description": "Set the color temperature of a light",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "light_id": {
+                        "type": "string",
+                        "description": "ID of the light"
+                    },
+                    "color_temp": {
+                        "type": "integer",
+                        "description": "Color temperature (153-500)",
+                        "minimum": 153,
+                        "maximum": 500
+                    }
+                },
+                "required": [
+                    "light_id",
+                    "color_temp"
+                ]
+            }
+        },
+        {
+            "name": "hue_set_rgb_color",
+            "description": "Set the color of a light using RGB values",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "light_id": {
+                        "type": "string",
+                        "description": "ID of the light"
+                    },
+                    "r": {
+                        "type": "integer",
+                        "description": "Red value (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    },
+                    "g": {
+                        "type": "integer",
+                        "description": "Green value (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    },
+                    "b": {
+                        "type": "integer",
+                        "description": "Blue value (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    }
+                },
+                "required": [
+                    "light_id",
+                    "r",
+                    "g",
+                    "b"
+                ]
+            }
+        },
+        {
+            "name": "hue_list_groups",
+            "description": "List all Philips Hue groups/rooms",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        {
+            "name": "hue_turn_on_group",
+            "description": "Turn on all lights in a group with optional brightness, color, or color temperature",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "group_id": {
+                        "type": "string",
+                        "description": "ID of the group to turn on"
+                    },
+                    "brightness": {
+                        "type": "integer",
+                        "description": "Brightness level (1-254)",
+                        "minimum": 1,
+                        "maximum": 254
+                    },
+                    "hue": {
+                        "type": "integer",
+                        "description": "Hue value (0-65535)",
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "saturation": {
+                        "type": "integer",
+                        "description": "Saturation value (0-254)",
+                        "minimum": 0,
+                        "maximum": 254
+                    },
+                    "color_temp": {
+                        "type": "integer",
+                        "description": "Color temperature (153-500)",
+                        "minimum": 153,
+                        "maximum": 500
+                    },
+                    "r": {
+                        "type": "integer",
+                        "description": "Red value for RGB color (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    },
+                    "g": {
+                        "type": "integer",
+                        "description": "Green value for RGB color (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    },
+                    "b": {
+                        "type": "integer",
+                        "description": "Blue value for RGB color (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    }
+                },
+                "required": [
+                    "group_id"
+                ]
+            }
+        },
+        {
+            "name": "hue_turn_off_group",
+            "description": "Turn off all lights in a group",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "group_id": {
+                        "type": "string",
+                        "description": "ID of the group to turn off"
+                    }
+                },
+                "required": [
+                    "group_id"
+                ]
+            }
+        },
+        {
+            "name": "hue_set_group_brightness",
+            "description": "Set the brightness of all lights in a group",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "group_id": {
+                        "type": "string",
+                        "description": "ID of the group"
+                    },
+                    "brightness": {
+                        "type": "integer",
+                        "description": "Brightness level (1-254)",
+                        "minimum": 1,
+                        "maximum": 254
+                    }
+                },
+                "required": [
+                    "group_id",
+                    "brightness"
+                ]
+            }
+        },
+        {
+            "name": "hue_set_group_color",
+            "description": "Set the color of all lights in a group using hue and saturation",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "group_id": {
+                        "type": "string",
+                        "description": "ID of the group"
+                    },
+                    "hue": {
+                        "type": "integer",
+                        "description": "Hue value (0-65535)",
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "saturation": {
+                        "type": "integer",
+                        "description": "Saturation value (0-254)",
+                        "minimum": 0,
+                        "maximum": 254
+                    }
+                },
+                "required": [
+                    "group_id",
+                    "hue",
+                    "saturation"
+                ]
+            }
+        },
+        {
+            "name": "hue_set_group_color_temp",
+            "description": "Set the color temperature of all lights in a group",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "group_id": {
+                        "type": "string",
+                        "description": "ID of the group"
+                    },
+                    "color_temp": {
+                        "type": "integer",
+                        "description": "Color temperature (153-500)",
+                        "minimum": 153,
+                        "maximum": 500
+                    }
+                },
+                "required": [
+                    "group_id",
+                    "color_temp"
+                ]
+            }
+        },
+        {
+            "name": "hue_set_group_rgb_color",
+            "description": "Set the color of all lights in a group using RGB values",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "group_id": {
+                        "type": "string",
+                        "description": "ID of the group"
+                    },
+                    "r": {
+                        "type": "integer",
+                        "description": "Red value (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    },
+                    "g": {
+                        "type": "integer",
+                        "description": "Green value (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    },
+                    "b": {
+                        "type": "integer",
+                        "description": "Blue value (0-255)",
+                        "minimum": 0,
+                        "maximum": 255
+                    }
+                },
+                "required": [
+                    "group_id",
+                    "r",
+                    "g",
+                    "b"
+                ]
+            }
+        }
     ]
 }

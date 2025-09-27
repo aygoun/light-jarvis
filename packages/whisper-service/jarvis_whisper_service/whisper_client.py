@@ -15,7 +15,7 @@ class WhisperClient:
     def __init__(
         self,
         model_path: str,
-        whisper_cpp_path: str = "whisper.cpp/main",
+        whisper_cpp_path: str = "./build/bin/whisper-cli",
         language: str = "en",
         temperature: float = 0.0,
         max_len: int = 448,
@@ -56,6 +56,8 @@ class WhisperClient:
                 "--print-progress",
                 "--print-colors",
             ]
+
+            print(cmd)
 
             self.logger.debug(f"Running command: {' '.join(cmd)}")
 

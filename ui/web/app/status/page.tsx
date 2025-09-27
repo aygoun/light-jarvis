@@ -14,9 +14,12 @@ import {
   Mail,
   Calendar,
   Bell,
+  Lightbulb,
+  Code,
 } from "lucide-react";
 import Link from "next/link";
-import { jarvisAPI, ServiceHealth } from "@/lib/api";
+import { ServiceHealth } from "@/types";
+import { serviceManager } from "@/services/ServiceManager";
 
 interface ServiceInfo {
   name: string;
@@ -87,6 +90,8 @@ export default function StatusPage() {
       toolName.includes("reminder")
     ) {
       return "Notifications";
+    } else if (toolName.includes("hue")) {
+      return "Hue";
     }
     return "Other";
   };
@@ -100,6 +105,8 @@ export default function StatusPage() {
         return <Calendar className="w-5 h-5 text-blue-400" />;
       case "Notifications":
         return <Bell className="w-5 h-5 text-yellow-400" />;
+      case "Hue":
+        return <Lightbulb className="w-5 h-5 text-green-400" />;
       default:
         return <Settings className="w-5 h-5 text-gray-400" />;
     }
@@ -109,7 +116,7 @@ export default function StatusPage() {
     setIsRefreshing(true);
 
     try {
-      const healthData = await jarvisAPI.checkAllServicesHealth();
+      const healthData = await serviceManager.status.getServicesStatus();
       console.log("Health data received:", healthData);
 
       setServices((prev) =>
@@ -117,13 +124,13 @@ export default function StatusPage() {
           // Map service names to health data keys
           let serviceKey: keyof typeof healthData;
           if (service.name === "Main Orchestrator") {
-            serviceKey = "main";
+            serviceKey = "assistant";
           } else if (service.name === "Whisper Service") {
-            serviceKey = "whisper";
+            serviceKey = "whisper_service";
           } else if (service.name === "MCP Orchestrator") {
-            serviceKey = "mcp";
+            serviceKey = "mcp_orchestrator";
           } else {
-            serviceKey = "main"; // fallback
+            serviceKey = "assistant"; // fallback
           }
 
           const health = healthData[serviceKey];
@@ -132,7 +139,7 @@ export default function StatusPage() {
             ...service,
             health,
             loading: false,
-            error: health?.status === "error" ? health.error : null,
+            error: health?.status === "error" ? health.error || null : null,
           };
         })
       );
@@ -155,7 +162,7 @@ export default function StatusPage() {
   const loadAvailableTools = async () => {
     setToolsLoading(true);
     try {
-      const tools = await jarvisAPI.listAvailableTools();
+      const tools = await serviceManager.listAvailableTools();
       setAvailableTools(tools);
     } catch (error) {
       console.error("Failed to load tools:", error);
@@ -251,6 +258,13 @@ export default function StatusPage() {
                   Last updated: {formatLastUpdated(lastUpdated)}
                 </span>
               )}
+              <Link
+                href="/routes"
+                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                title="View API Routes"
+              >
+                <Code className="w-5 h-5 text-gray-300" />
+              </Link>
               <button
                 onClick={checkServicesHealth}
                 disabled={isRefreshing}
@@ -421,7 +435,10 @@ export default function StatusPage() {
           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-white">
-                Available Tools
+                Available Tools{" "}
+                <span className="text-gray-400 text-sm font-normal">
+                  ({availableTools.length} tools)
+                </span>
               </h2>
               <button
                 onClick={loadAvailableTools}

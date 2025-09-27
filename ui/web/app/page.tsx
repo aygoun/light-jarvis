@@ -5,9 +5,11 @@ import { motion } from "framer-motion";
 import { InputForm } from "@/components/input-form";
 import { SpeakingBubble } from "@/components/speaking-bubble";
 import { StatusIndicator } from "@/components/status-indicator";
-import { jarvisAPI, ChatRequest, ChatResponse } from "@/lib/api";
+import { ChatRequest } from "@/types";
+import { AudioRecorder } from "@/lib/audio-recorder";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
+import { serviceManager } from "@/services/ServiceManager";
 
 export default function Home() {
   const [response, setResponse] = useState("");
@@ -24,31 +26,64 @@ export default function Home() {
     null
   );
   const [completeResponse, setCompleteResponse] = useState("");
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioRecorderRef = useRef<AudioRecorder | null>(null);
+  const [speechRecognitionAvailable, setSpeechRecognitionAvailable] =
+    useState(false);
 
   useEffect(() => {
-    // Initialize speech recognition
-    if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
-      recognitionRef.current = new (window as any).webkitSpeechRecognition();
-      if (recognitionRef.current) {
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = "en-US";
+    // Initialize audio recorder
+    if (typeof window !== "undefined" && navigator.mediaDevices) {
+      // Check if we're in a secure context (HTTPS or localhost)
+      if (!window.isSecureContext) {
+        console.warn("Audio recording requires HTTPS or localhost");
+        toast.error(
+          "Audio recording requires HTTPS. Please use HTTPS or localhost to enable voice features."
+        );
+        setSpeechRecognitionAvailable(false);
+        return;
+      }
 
-        recognitionRef.current.onresult = (event: any) => {
-          const transcript = Array.from(event.results)
-            .map((result: any) => result[0])
-            .map((result: any) => result.transcript)
-            .join("");
+      // Initialize audio recorder
+      audioRecorderRef.current = new AudioRecorder({
+        onTranscript: (transcript: string) => {
+          console.log("Transcript received:", transcript);
           setTranscript(transcript);
-        };
-
-        recognitionRef.current.onend = () => {
+          // Auto-submit the transcribed text
+          if (transcript.trim()) {
+            handleSubmit(transcript.trim());
+          }
+        },
+        onError: (error: string) => {
+          console.error("Audio recording error:", error);
+          toast.error(error);
           setIsListening(false);
           setIsRecording(false);
-        };
-      }
+        },
+        onStart: () => {
+          console.log("Audio recording started");
+          setIsListening(true);
+          setIsRecording(true);
+        },
+        onStop: () => {
+          console.log("Audio recording stopped");
+          setIsListening(false);
+          setIsRecording(false);
+        },
+        whisperServiceUrl: "http://localhost:3001", // Your local Whisper service
+      });
+
+      setSpeechRecognitionAvailable(true);
+    } else {
+      console.warn("Audio recording not supported in this browser");
+      setSpeechRecognitionAvailable(false);
     }
+
+    // Cleanup on unmount
+    return () => {
+      if (audioRecorderRef.current) {
+        audioRecorderRef.current.destroy();
+      }
+    };
   }, []);
 
   const stopSpeaking = () => {
@@ -83,19 +118,21 @@ export default function Home() {
   };
 
   const startListening = () => {
-    if (recognitionRef.current && !isListening) {
+    console.log("Starting audio recording");
+    if (audioRecorderRef.current && !isListening) {
       setTranscript("");
-      setIsListening(true);
-      setIsRecording(true);
-      recognitionRef.current.start();
+      audioRecorderRef.current.startRecording();
+    } else if (!audioRecorderRef.current) {
+      toast.error(
+        "Audio recording not available. Please refresh the page and try again."
+      );
     }
   };
 
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-      setIsRecording(false);
+    console.log("Stopping audio recording");
+    if (audioRecorderRef.current && isListening) {
+      audioRecorderRef.current.stopRecording();
     }
   };
 
@@ -120,109 +157,105 @@ export default function Home() {
         use_stt: false,
       };
 
-      await jarvisAPI.sendChatMessageStream(
+      await serviceManager.chat.sendMessageStream(
         request,
-        // onToken callback - called for each token received
-        (token: string) => {
-          if (!controller.signal.aborted) {
-            setResponse((prev) => {
-              const newResponse = prev + token;
-              setCompleteResponse(newResponse);
-              console.log(
-                "Token received, completeResponse length:",
-                newResponse.length
-              );
-              return newResponse;
-            });
-          }
-        },
-        // onComplete callback - called when streaming is done
-        async () => {
-          if (!controller.signal.aborted) {
-            setIsLoading(false);
-            setStreamingController(null);
-
-            console.log(
-              "Streaming completed. useVoiceMode:",
-              useVoiceMode,
-              "completeResponse length:",
-              completeResponse.length
-            );
-
-            // Generate TTS audio if voice mode is enabled
-            if (useVoiceMode && completeResponse) {
-              console.log(
-                "Generating TTS for response:",
-                completeResponse.substring(0, 100) + "..."
-              );
-              try {
-                const ttsRequest = { text: completeResponse };
-                const ttsResponse = await jarvisAPI.speakText(ttsRequest);
-                console.log("TTS Response:", ttsResponse);
-
-                if (ttsResponse.success && ttsResponse.audio_url) {
-                  const audio = new Audio(ttsResponse.audio_url);
-                  setAudioElement(audio);
-
-                  audio.onplay = () => {
-                    console.log("Audio started playing");
-                    setIsSpeaking(true);
-                  };
-                  audio.onpause = () => {
-                    console.log("Audio paused");
-                    setIsPaused(true);
-                  };
-                  audio.onended = () => {
-                    console.log("Audio ended");
-                    setIsSpeaking(false);
-                    setIsPaused(false);
-                  };
-
-                  console.log("Starting audio playback...");
-                  await audio.play();
-                } else {
-                  console.log("TTS failed - no audio URL or success=false");
-                }
-              } catch (error) {
-                console.error("TTS failed:", error);
-                toast.error("Failed to generate speech", {
-                  duration: 3000,
-                  position: "top-right",
-                });
-              }
-            } else {
-              console.log(
-                "TTS skipped - useVoiceMode:",
-                useVoiceMode,
-                "completeResponse length:",
-                completeResponse.length
-              );
+        {
+          onToken: (token: string) => {
+            if (!controller.signal.aborted) {
+              setResponse((prev) => {
+                const newResponse = prev + token;
+                setCompleteResponse(newResponse);
+                console.log(
+                  "Token received, completeResponse length:",
+                  newResponse.length
+                );
+                return newResponse;
+              });
             }
-          }
+          },
+          onComplete: async (finalResponse: string) => {
+            if (!controller.signal.aborted) {
+              setIsLoading(false);
+              setStreamingController(null);
+
+              console.log(
+                "Streaming completed. useVoiceMode:",
+                useVoiceMode,
+                "finalResponse length:",
+                finalResponse.length
+              );
+
+              // Generate TTS audio if voice mode is enabled
+              if (useVoiceMode && finalResponse) {
+                console.log(
+                  "Generating TTS for response:",
+                  finalResponse.substring(0, 100) + "..."
+                );
+                try {
+                  const ttsRequest = { text: finalResponse };
+                  const ttsResponse = await serviceManager.audio.speakText(
+                    ttsRequest
+                  );
+                  console.log("TTS Response:", ttsResponse);
+
+                  if (ttsResponse.success && ttsResponse.audio_url) {
+                    const audio = new Audio(ttsResponse.audio_url);
+                    setAudioElement(audio);
+
+                    audio.onplay = () => {
+                      console.log("Audio started playing");
+                      setIsSpeaking(true);
+                    };
+                    audio.onpause = () => {
+                      console.log("Audio paused");
+                      setIsPaused(true);
+                    };
+                    audio.onended = () => {
+                      console.log("Audio ended");
+                      setIsSpeaking(false);
+                      setIsPaused(false);
+                    };
+
+                    console.log("Starting audio playback...");
+                    await audio.play();
+                  } else {
+                    console.log("TTS failed - no audio URL or success=false");
+                  }
+                } catch (error) {
+                  console.error("TTS failed:", error);
+                  toast.error("Failed to generate speech", {
+                    duration: 3000,
+                    position: "top-right",
+                  });
+                }
+              } else {
+                console.log(
+                  "TTS skipped - useVoiceMode:",
+                  useVoiceMode,
+                  "finalResponse length:",
+                  finalResponse.length
+                );
+              }
+            }
+          },
+          onError: (error: string) => {
+            if (!controller.signal.aborted) {
+              console.error("Streaming failed:", error);
+              toast.error(`Connection failed: ${error}`, {
+                duration: 5000,
+                position: "top-right",
+              });
+
+              // Fallback response
+              const fallbackResponse = `I apologize, but I'm having trouble connecting to my services right now. Error: ${error}. Please check the service status below and try again.`;
+
+              setResponse(fallbackResponse);
+              setCompleteResponse(fallbackResponse);
+              setIsLoading(false);
+              setStreamingController(null);
+            }
+          },
         },
-        // onError callback - called if streaming fails
-        (error: string) => {
-          if (!controller.signal.aborted) {
-            console.error("Streaming failed:", error);
-            toast.error(`Connection failed: ${error}`, {
-              duration: 5000,
-              position: "top-right",
-            });
-
-            // Fallback response
-            const fallbackResponse = `I apologize, but I'm having trouble connecting to my services right now. 
-
-Error: ${error}
-
-Please check the service status below and try again.`;
-
-            setResponse(fallbackResponse);
-            setCompleteResponse(fallbackResponse);
-            setIsLoading(false);
-            setStreamingController(null);
-          }
-        },
-        // AbortSignal for cancellation
         controller.signal
       );
     } catch (error) {
@@ -297,12 +330,33 @@ Please check the service status below and try again.`;
         </div>
 
         {/* Status Indicator */}
-        <Link
-          href="/status"
-          className="flex items-center space-x-2 p-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg hover:bg-gray-700/50 transition-colors"
-        >
-          <StatusIndicator />
-        </Link>
+        <div className="flex items-center space-x-2">
+          <Link
+            href="/status"
+            className="flex items-center space-x-2 p-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg hover:bg-gray-700/50 transition-colors"
+          >
+            <StatusIndicator />
+          </Link>
+          <Link
+            href="/routes"
+            className="p-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg hover:bg-gray-700/50 transition-colors"
+            title="View API Routes"
+          >
+            <svg
+              className="w-5 h-5 text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+              />
+            </svg>
+          </Link>
+        </div>
       </motion.div>
 
       {/* Main centered content */}
@@ -368,7 +422,10 @@ Please check the service status below and try again.`;
             onSubmit={handleSubmit}
             isLoading={isLoading}
             onStartListening={startListening}
+            onStopListening={stopListening}
             isListening={isListening}
+            transcript={transcript}
+            speechRecognitionAvailable={speechRecognitionAvailable}
           />
         </motion.div>
 

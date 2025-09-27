@@ -22,7 +22,9 @@ logger = get_logger("jarvis.cli")
 def chat(
     message: str = typer.Argument(..., help="Message to send to Jarvis"),
     stream: bool = typer.Option(False, "--stream", "-s", help="Stream the response"),
-    config_file: Optional[str] = typer.Option(None, "--config", "-c", help="Config file path"),
+    config_file: Optional[str] = typer.Option(
+        None, "--config", "-c", help="Config file path"
+    ),
 ):
     """Chat with Jarvis."""
     asyncio.run(_chat_command(message, stream, config_file))
@@ -32,7 +34,9 @@ def chat(
 def server(
     host: str = typer.Option("localhost", "--host", "-h", help="Host to bind to"),
     port: int = typer.Option(3002, "--port", "-p", help="Port to bind to"),
-    config_file: Optional[str] = typer.Option(None, "--config", "-c", help="Config file path"),
+    config_file: Optional[str] = typer.Option(
+        None, "--config", "-c", help="Config file path"
+    ),
 ):
     """Start the Jarvis server."""
     asyncio.run(_server_command(host, port, config_file))
@@ -52,17 +56,19 @@ async def _chat_command(message: str, stream: bool, config_file: Optional[str]) 
         await assistant.initialize()
 
         # Display welcome message
-        console.print(Panel(
-            Text("🤖 Jarvis Assistant", style="bold blue"),
-            title="Welcome",
-            border_style="blue"
-        ))
+        console.print(
+            Panel(
+                Text("🤖 Jarvis Assistant", style="bold blue"),
+                title="Welcome",
+                border_style="blue",
+            )
+        )
 
         if stream:
             # Stream response
             console.print(f"[bold]You:[/bold] {message}")
             console.print("[bold]Jarvis:[/bold] ", end="")
-            
+
             async for token in assistant.process_command_stream(message):
                 console.print(token, end="")
             console.print()  # New line after streaming
@@ -91,11 +97,13 @@ async def _server_command(host: str, port: int, config_file: Optional[str]) -> N
             pass
 
         # Display startup message
-        console.print(Panel(
-            Text("🚀 Starting Jarvis Main Orchestrator Server", style="bold green"),
-            title="Jarvis Server",
-            border_style="green"
-        ))
+        console.print(
+            Panel(
+                Text("🚀 Starting Jarvis Main Orchestrator Server", style="bold green"),
+                title="Jarvis Server",
+                border_style="green",
+            )
+        )
         console.print(f"🌐 Server will be available at: http://{host}:{port}")
         console.print("📊 Health check: http://{host}:{port}/health")
         console.print("💬 Chat endpoint: http://{host}:{port}/chat")
@@ -105,6 +113,7 @@ async def _server_command(host: str, port: int, config_file: Optional[str]) -> N
 
         # Start server
         from .server import MainOrchestratorServer
+
         server = MainOrchestratorServer(config)
         await server.start_server(host=host, port=port)
 

@@ -15,6 +15,7 @@ dependencies = [
     "rich>=13.7.0",
     "python-dotenv>=1.0.0",
     "python-multipart>=0.0.20",
+    "jarvis-hue",
 ]
 requires-python = ">=3.11"
 
@@ -37,7 +38,8 @@ members = [
     "packages/main-orchestrator",
     "packages/tools/gmail-tool",
     "packages/tools/calendar-tool",
-    "packages/tools/notification-tool"
+    "packages/tools/notification-tool",
+    "packages/tools/hue-tool",
 ]
 
 [tool.uv.sources]
@@ -49,6 +51,7 @@ jarvis-main-orchestrator = { workspace = true }
 jarvis-gmail = { workspace = true }
 jarvis-calendar = { workspace = true }
 jarvis-notification = { workspace = true }
+jarvis-hue = { workspace = true, editable = true }
 
 [tool.uv]
 dev-dependencies = [
@@ -79,10 +82,11 @@ addopts = [
     "--cov=jarvis_gmail",
     "--cov=jarvis_calendar",
     "--cov=jarvis_notification",
+    "--cov=jarvis_hue",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
     "--cov-report=xml",
-    "--cov-fail-under=80"
+    "--cov-fail-under=80",
 ]
 markers = [
     "unit: Unit tests",

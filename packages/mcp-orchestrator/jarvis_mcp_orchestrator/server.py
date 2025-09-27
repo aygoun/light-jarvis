@@ -18,6 +18,7 @@ from jarvis_shared.google_auth import GoogleAuthManager
 from .tools.gmail_tool import GmailTool
 from .tools.calendar_tool import CalendarTool
 from .tools.notification_tool import NotificationTool
+from .tools.hue_tool import HueTool
 
 
 class ToolCall(BaseModel):
@@ -65,6 +66,7 @@ class MCPOrchestratorServer:
         self.gmail_tool: Optional[GmailTool] = None
         self.calendar_tool: Optional[CalendarTool] = None
         self.notification_tool: Optional[NotificationTool] = None
+        self.hue_tool: Optional[HueTool] = None
 
         # Authentication
         self.jarvis_config: Optional[JarvisConfig] = None
@@ -221,8 +223,9 @@ class MCPOrchestratorServer:
             notification_path = (
                 project_root / "packages" / "tools" / "notification-tool"
             )
+            hue_path = project_root / "packages" / "tools" / "hue-tool"
 
-            for path in [gmail_path, calendar_path, notification_path]:
+            for path in [gmail_path, calendar_path, notification_path, hue_path]:
                 if str(path) not in sys.path:
                     sys.path.insert(0, str(path))
 
@@ -230,6 +233,7 @@ class MCPOrchestratorServer:
             self.gmail_tool = GmailTool(self.jarvis_config.google)
             self.calendar_tool = CalendarTool(self.jarvis_config.google)
             self.notification_tool = NotificationTool()
+            self.hue_tool = HueTool(self.jarvis_config.hue)
 
             # Register tools
             self._register_tools()
@@ -281,6 +285,11 @@ class MCPOrchestratorServer:
         # Register Notification tools
         if self.notification_tool:
             for tool_def in self.notification_tool.get_tool_definitions():
+                self.tools_registry[tool_def["name"]] = tool_def
+
+        # Register Hue tools
+        if self.hue_tool:
+            for tool_def in self.hue_tool.get_tool_definitions():
                 self.tools_registry[tool_def["name"]] = tool_def
 
         self.logger.info(f"Registered {len(self.tools_registry)} tools")
@@ -364,6 +373,15 @@ class MCPOrchestratorServer:
                     return {
                         "status": "error",
                         "message": "Notification tool not initialized",
+                    }
+
+            elif tool_name.startswith("hue_"):
+                if self.hue_tool:
+                    return await self.hue_tool.execute(tool_name, arguments)
+                else:
+                    return {
+                        "status": "error",
+                        "message": "Hue tool not initialized",
                     }
 
             else:

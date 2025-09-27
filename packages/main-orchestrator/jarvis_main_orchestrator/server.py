@@ -1,6 +1,7 @@
 """Main Orchestrator Server - coordinates all services."""
 
 import asyncio
+from datetime import datetime
 from typing import Dict, Any, Optional, AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, Request, File, UploadFile, Form
@@ -229,6 +230,107 @@ class MainOrchestratorServer:
                     "mcp_orchestrator": {"status": "unknown"},
                     "whisper_service": {"status": "unknown"},
                     "llm_service": {"status": "unknown"},
+                }
+
+        @self.app.get("/services/routes")
+        async def services_routes() -> Dict[str, Any]:
+            """Get all available routes from all services."""
+            try:
+                import aiohttp
+                import asyncio
+
+                # Service endpoints
+                services = {
+                    "main_orchestrator": "http://localhost:3002",
+                    "whisper_service": "http://localhost:3001",
+                    "mcp_orchestrator": "http://localhost:3000",
+                }
+
+                routes = {}
+
+                async def get_service_routes(service_name: str, base_url: str):
+                    try:
+                        async with aiohttp.ClientSession() as session:
+                            # Try to get OpenAPI schema
+                            async with session.get(
+                                f"{base_url}/openapi.json"
+                            ) as response:
+                                if response.status == 200:
+                                    schema = await response.json()
+                                    service_routes = []
+
+                                    for path, methods in schema.get(
+                                        "paths", {}
+                                    ).items():
+                                        for method, details in methods.items():
+                                            if method.upper() in [
+                                                "GET",
+                                                "POST",
+                                                "PUT",
+                                                "DELETE",
+                                                "PATCH",
+                                            ]:
+                                                route_info = {
+                                                    "path": path,
+                                                    "method": method.upper(),
+                                                    "summary": details.get(
+                                                        "summary", ""
+                                                    ),
+                                                    "description": details.get(
+                                                        "description", ""
+                                                    ),
+                                                    "tags": details.get("tags", []),
+                                                    "full_url": f"{base_url}{path}",
+                                                }
+                                                service_routes.append(route_info)
+
+                                    routes[service_name] = {
+                                        "base_url": base_url,
+                                        "status": "available",
+                                        "routes": service_routes,
+                                        "total_routes": len(service_routes),
+                                    }
+                                else:
+                                    routes[service_name] = {
+                                        "base_url": base_url,
+                                        "status": "no_openapi",
+                                        "routes": [],
+                                        "total_routes": 0,
+                                        "error": f"OpenAPI schema not available (status: {response.status})",
+                                    }
+                    except Exception as e:
+                        routes[service_name] = {
+                            "base_url": base_url,
+                            "status": "error",
+                            "routes": [],
+                            "total_routes": 0,
+                            "error": str(e),
+                        }
+
+                # Get routes from all services concurrently
+                await asyncio.gather(
+                    *[get_service_routes(name, url) for name, url in services.items()]
+                )
+
+                # Calculate totals
+                total_routes = sum(
+                    service.get("total_routes", 0) for service in routes.values()
+                )
+
+                return {
+                    "services": routes,
+                    "total_services": len(services),
+                    "total_routes": total_routes,
+                    "timestamp": datetime.now().isoformat(),
+                }
+
+            except Exception as e:
+                self.logger.error(f"Failed to get services routes: {e}", exc_info=True)
+                return {
+                    "error": str(e),
+                    "services": {},
+                    "total_services": 0,
+                    "total_routes": 0,
                 }
 
     async def initialize(self) -> None:

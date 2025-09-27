@@ -91,6 +91,15 @@ class TTSConfig(BaseModel):
     volume: float = 1
 
 
+class HueConfig(BaseModel):
+    """Philips Hue configuration."""
+
+    bridge_ip: Optional[str] = None
+    username: Optional[str] = None
+    auto_discover: bool = True
+    timeout: int = 10
+
+
 class JarvisConfig(BaseSettings):
     """Main Jarvis configuration."""
 
@@ -104,6 +113,7 @@ class JarvisConfig(BaseSettings):
     google: GoogleConfig = Field(default_factory=GoogleConfig)
     whisper: WhisperConfig = Field(default_factory=WhisperConfig)
     tts: TTSConfig = Field(default_factory=TTSConfig)
+    hue: HueConfig = Field(default_factory=HueConfig)
 
     # Configuration sections
     general: GeneralConfig = Field(default_factory=GeneralConfig)

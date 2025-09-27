@@ -80,6 +80,7 @@ jobs:
           uv build packages/tools/gmail-tool/
           uv build packages/tools/calendar-tool/
           uv build packages/tools/notification-tool/
+          uv build packages/tools/hue-tool/
           uv build .
 
       - name: Upload build artifacts

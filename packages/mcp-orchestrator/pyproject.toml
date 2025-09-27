@@ -18,6 +18,7 @@ dependencies = [
     "jarvis-gmail",
     "jarvis-calendar", 
     "jarvis-notification",
+    "jarvis-hue",
 ]
 requires-python = ">=3.11"
 
