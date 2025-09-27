@@ -22,6 +22,13 @@ class CalendarClient:
         """Check if the Calendar service is authenticated and ready to use."""
         return self.service is not None
 
+    def set_service(self, service, credentials=None):
+        """Set the authenticated Calendar service."""
+        self.service = service
+        if credentials:
+            self.credentials = credentials
+        self.logger.info("✅ Calendar service authenticated and ready")
+
     async def list_events(
         self,
         start_date: Optional[str] = None,

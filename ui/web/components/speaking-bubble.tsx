@@ -1,207 +1,126 @@
 "use client";
 
 import { motion } from "framer-motion";
-// No icons needed for the simplified bubble
+import { useMemo, useState } from "react";
+import { Pause, Square, Play } from "lucide-react";
 
 interface SpeakingBubbleProps {
   isSpeaking: boolean;
-  response: string;
-  isLoading: boolean;
-  onStopSpeaking: () => void;
-  transcript: string;
+  onStopSpeaking?: () => void;
+  onPauseSpeaking?: () => void;
+  onResumeSpeaking?: () => void;
+  isPaused?: boolean;
 }
 
 export function SpeakingBubble({
   isSpeaking,
-  response,
-  isLoading,
   onStopSpeaking,
-  transcript,
+  onPauseSpeaking,
+  onResumeSpeaking,
+  isPaused = false,
 }: SpeakingBubbleProps) {
+  const delays = useMemo(
+    () => Array.from({ length: 3 }, () => Math.random() * 2),
+    []
+  );
+
   return (
-    <div className="relative flex items-center justify-center">
-      {/* Main bubble */}
-      <motion.div
-        animate={{
-          scale: isSpeaking ? [1, 1.1, 1] : 1,
-          y: isSpeaking ? [0, -10, 0] : 0,
-        }}
-        transition={{
-          duration: 1.5,
-          repeat: isSpeaking ? Infinity : 0,
-          ease: "easeInOut",
-        }}
-        className="relative"
+    <div className="relative flex items-center justify-center w-80 h-80">
+      {/* Main clickable blob */}
+      <motion.button
+        onClick={
+          isSpeaking
+            ? isPaused
+              ? onResumeSpeaking
+              : onPauseSpeaking
+            : undefined
+        }
+        disabled={!isSpeaking}
+        className={`relative w-72 h-72 rounded-full flex items-center justify-center overflow-hidden ${
+          isSpeaking ? "cursor-pointer" : "cursor-default"
+        }`}
+        whileHover={isSpeaking ? { scale: 1.05 } : {}}
+        whileTap={isSpeaking ? { scale: 0.95 } : {}}
       >
-        {/* Outer glow ring with Siri-like colors */}
+        {/* Core neon blob */}
         <motion.div
+          className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500"
           animate={{
-            scale: isSpeaking ? [1, 1.4, 1] : 1,
-            opacity: isSpeaking ? [0.2, 0.6, 0.2] : 0,
+            borderRadius: isSpeaking
+              ? [
+                  "50% 50% 50% 50%",
+                  "60% 40% 70% 30%",
+                  "40% 60% 30% 70%",
+                  "50% 50% 50% 50%",
+                ]
+              : "50% 50% 50% 50%",
+            scale: isSpeaking ? [1, 1.07, 0.96, 1] : 1,
           }}
           transition={{
-            duration: 2.5,
+            duration: 6,
             repeat: isSpeaking ? Infinity : 0,
             ease: "easeInOut",
           }}
-          className="absolute inset-0 w-80 h-80 bg-gradient-to-r from-blue-400/30 via-purple-500/20 to-pink-500/30 rounded-full blur-2xl"
         />
 
-        {/* Secondary glow for depth */}
-        <motion.div
-          animate={{
-            scale: isSpeaking ? [1, 1.6, 1] : 1,
-            opacity: isSpeaking ? [0.1, 0.4, 0.1] : 0,
-          }}
-          transition={{
-            duration: 3,
-            repeat: isSpeaking ? Infinity : 0,
-            ease: "easeInOut",
-            delay: 0.5,
-          }}
-          className="absolute inset-0 w-80 h-80 bg-gradient-to-r from-blue-300/20 via-purple-400/15 to-pink-400/20 rounded-full blur-3xl"
-        />
-
-        {/* Main bubble container - clickable to stop speaking */}
-        <motion.button
-          onClick={isSpeaking ? onStopSpeaking : undefined}
-          disabled={!isSpeaking}
-          className={`relative w-80 h-80 rounded-full shadow-2xl flex items-center justify-center overflow-hidden ${
-            isSpeaking ? "cursor-pointer" : "cursor-default"
-          }`}
-          whileHover={isSpeaking ? { scale: 1.05 } : {}}
-          whileTap={isSpeaking ? { scale: 0.95 } : {}}
-        >
-          {/* Siri-like gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-full" />
-
-          {/* Inner glow effect */}
-          <div className="absolute inset-2 bg-gradient-to-tr from-blue-300/30 via-purple-400/20 to-pink-400/30 rounded-full blur-sm" />
-
-          {/* Highlight effect */}
-          <div className="absolute top-4 left-4 w-24 h-24 bg-gradient-to-br from-white/40 to-transparent rounded-full blur-md" />
-
-          {/* Bottom accent */}
-          <div className="absolute bottom-6 right-6 w-16 h-16 bg-gradient-to-tl from-pink-400/60 to-transparent rounded-full blur-sm" />
-
-          {/* Status text */}
+        {/* Neon blur glows */}
+        {delays.map((d, i) => (
           <motion.div
+            key={i}
+            className="absolute inset-0 rounded-full blur-3xl bg-gradient-to-tr from-blue-400/40 via-fuchsia-500/30 to-purple-400/40"
             animate={{
-              opacity: isSpeaking ? [0.6, 1, 0.6] : 1,
-              scale: isSpeaking ? [0.95, 1.05, 0.95] : 1,
+              scale: isSpeaking ? [1, 1.2, 0.9, 1] : 1,
+              opacity: isSpeaking ? [0.3, 0.7, 0.3] : 0,
             }}
             transition={{
-              duration: 1.5,
+              duration: 4 + i,
               repeat: isSpeaking ? Infinity : 0,
               ease: "easeInOut",
+              delay: d,
             }}
-            className="relative z-10 text-white/90 text-sm font-semibold drop-shadow-lg"
-          >
-            {isLoading ? "Thinking..." : isSpeaking ? "Click to stop" : "Ready"}
-          </motion.div>
+          />
+        ))}
 
-          {/* Siri-like sound waves */}
-          {isSpeaking && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex items-center justify-center space-x-2">
-                {[...Array(7)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{
-                      height: [8, 32, 8],
-                      opacity: [0.4, 1, 0.4],
-                      scaleY: [0.5, 1.2, 0.5],
-                    }}
-                    transition={{
-                      duration: 0.8,
-                      repeat: Infinity,
-                      delay: i * 0.15,
-                      ease: "easeInOut",
-                    }}
-                    className="w-1.5 bg-white/80 rounded-full shadow-lg"
-                    style={{ height: 8 }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Siri-like pulsing rings */}
-          {isSpeaking && (
-            <>
-              <motion.div
-                animate={{
-                  scale: [1, 1.1, 1],
-                  opacity: [0.3, 0.8, 0.3],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="absolute inset-0 rounded-full border-2 border-white/30"
-              />
-              <motion.div
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.2, 0.6, 0.2],
-                }}
-                transition={{
-                  duration: 2.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 0.5,
-                }}
-                className="absolute inset-0 rounded-full border border-white/20"
-              />
-            </>
-          )}
-        </motion.button>
-
-        {/* Siri-like floating orbs */}
-        {isSpeaking && (
-          <>
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-3 h-3 bg-white/40 rounded-full blur-sm"
-                style={{
-                  left: `${50 + 50 * Math.cos((i * 60 * Math.PI) / 180)}%`,
-                  top: `${50 + 50 * Math.sin((i * 60 * Math.PI) / 180)}%`,
-                }}
-                animate={{
-                  scale: [0, 1.5, 0],
-                  opacity: [0, 0.8, 0],
-                  y: [0, -30, 0],
-                  x: [0, (Math.random() - 0.5) * 20, 0],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  delay: i * 0.4,
-                  ease: "easeInOut",
-                }}
-              />
-            ))}
-          </>
-        )}
-      </motion.div>
-
-      {/* Transcript display */}
-      {transcript && (
+        {/* Inner white-ish highlight for depth */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="absolute -bottom-32 left-1/2 transform -translate-x-1/2 w-full max-w-2xl"
-        >
-          <div className="bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-2xl p-4 shadow-2xl">
-            <p className="text-gray-300 text-center text-sm">
-              <span className="text-blue-400">You said:</span> {transcript}
-            </p>
-          </div>
-        </motion.div>
-      )}
+          className="absolute w-24 h-24 rounded-full bg-white/40 blur-2xl"
+          animate={{
+            x: isSpeaking ? [0, 20, -15, 0] : 0,
+            y: isSpeaking ? [0, -15, 10, 0] : 0,
+            opacity: isSpeaking ? [0.4, 0.8, 0.4] : 0.3,
+          }}
+          transition={{
+            duration: 5,
+            repeat: isSpeaking ? Infinity : 0,
+            ease: "easeInOut",
+          }}
+        />
+      </motion.button>
+
+      {/* Floating neon sparks */}
+      {isSpeaking &&
+        [...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-4 h-4 rounded-full blur-md bg-gradient-to-br from-blue-400 to-purple-500"
+            style={{
+              left: `${50 + 55 * Math.cos((i * 60 * Math.PI) / 180)}%`,
+              top: `${50 + 55 * Math.sin((i * 60 * Math.PI) / 180)}%`,
+            }}
+            animate={{
+              y: [0, -25, 0],
+              x: [0, (Math.random() - 0.5) * 20, 0],
+              opacity: [0.2, 0.9, 0.2],
+              scale: [0.8, 1.3, 0.8],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              delay: i * 0.4,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
     </div>
   );
 }

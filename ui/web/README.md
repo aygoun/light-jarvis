@@ -46,9 +46,9 @@ npm run dev
 │   └── page.tsx        # Home page
 ├── components/         # React components
 │   ├── ui/            # shadcn/ui components
-│   ├── ai-response.tsx # AI response display
 │   ├── input-form.tsx  # Input form component
-│   └── hero-section.tsx # Hero section
+│   ├── speaking-bubble.tsx # Speaking animation component
+│   └── status-indicator.tsx # Service status indicator
 └── lib/               # Utility functions
     └── utils.ts       # Class name utilities
 ```

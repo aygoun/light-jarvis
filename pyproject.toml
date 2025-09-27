@@ -1,32 +1,25 @@
 [project]
 name = "jarvis"
 version = "0.1.0"
-description = "AI Assistant like Jarvis with local LLM and MCP integration"
+description = "AI Assistant like Jarvis with clean architecture and service separation"
 authors = [
     {name = "Armand Blin", email = "armand.blin@gmail.com"},
 ]
 dependencies = [
     "jarvis-shared",
-    "jarvis-core",
+    "jarvis-main-orchestrator",
+    "jarvis-mcp-orchestrator",
+    "jarvis-whisper-service",
+    "jarvis-llm",
     "typer>=0.12.0",
-    "ollama>=0.3.0",
-    "mcp>=1.0.0",
-    "google-auth>=2.29.0",
-    "google-auth-oauthlib>=1.2.0",
-    "google-auth-httplib2>=0.2.0",
-    "google-api-python-client>=2.140.0",
-    "pydantic>=2.8.0",
-    "pydantic-settings>=2.0.0",
     "rich>=13.7.0",
-    "asyncio-mqtt>=0.16.0",
     "python-dotenv>=1.0.0",
-    "aiohttp>=3.12.15",
-    "requests>=2.32.5",
+    "python-multipart>=0.0.20",
 ]
 requires-python = ">=3.11"
 
 [project.scripts]
-jarvis = "ui.cli.cli:app"
+jarvis = "jarvis_main_orchestrator.cli:app"
 
 [build-system]
 requires = ["hatchling"]
@@ -37,10 +30,11 @@ packages = ["ui"]
 
 [tool.uv.workspace]
 members = [
-    "packages/core",
     "packages/shared",
     "packages/llm-service",
-    "packages/mcp-server",
+    "packages/mcp-orchestrator",
+    "packages/whisper-service",
+    "packages/main-orchestrator",
     "packages/tools/gmail-tool",
     "packages/tools/calendar-tool",
     "packages/tools/notification-tool"
@@ -48,9 +42,10 @@ members = [
 
 [tool.uv.sources]
 jarvis-shared = { workspace = true }
-jarvis-core = { workspace = true }
 jarvis-llm = { workspace = true }
-jarvis-mcp = { workspace = true }
+jarvis-mcp-orchestrator = { workspace = true }
+jarvis-whisper-service = { workspace = true }
+jarvis-main-orchestrator = { workspace = true }
 jarvis-gmail = { workspace = true }
 jarvis-calendar = { workspace = true }
 jarvis-notification = { workspace = true }

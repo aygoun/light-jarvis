@@ -1,329 +1,258 @@
-<div align="center">
+# Jarvis - AI Assistant with Clean Architecture
 
-<img src="docs/assets/logo.png" alt="Jarvis AI Assistant" width="200" height="200" style="border-radius: 50%">
+A modern AI assistant built with a clean, service-oriented architecture. Jarvis provides speech-to-text, text-to-speech, and intelligent tool integration capabilities.
 
-# Jarvis AI Assistant
+## 🏗️ Architecture
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![MCP](https://img.shields.io/badge/MCP-Protocol-orange.svg)](https://modelcontextprotocol.io)
-[![Ollama](https://img.shields.io/badge/Ollama-LLM-purple.svg)](https://ollama.ai)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Server-red.svg)](https://fastapi.tiangolo.com)
+The project is organized into three main services:
 
-</div>
+### 1. MCP Orchestrator (`packages/mcp-orchestrator/`)
 
-A modular AI assistant with MCP (Model Context Protocol) integration, supporting Gmail, Google Calendar, and system notifications.
+- **Port**: 3000
+- **Purpose**: Consolidates all MCP tools (Gmail, Calendar, Notifications)
+- **Features**:
+  - Unified MCP interface
+  - Google authentication management
+  - Tool execution coordination
 
-**TODO:**
+### 2. Whisper Service (`packages/whisper-service/`)
 
-- Small Website UI
-- STT & TTS on Web
-- Create Objects Recognition Model via Image then live webcam
-- Integrate with workflow LLM (ie: "Launch the camera and tell me what you see")
+- **Port**: 3001
+- **Purpose**: Dedicated STT/TTS functionality
+- **Features**:
+  - Speech-to-Text using Whisper.cpp
+  - Text-to-Speech using Edge-TTS
+  - Audio processing and conversion
+
+### 3. Main Orchestrator (`packages/main-orchestrator/`)
+
+- **Port**: 3002
+- **Purpose**: Coordinates all services
+- **Features**:
+  - LLM integration (Ollama)
+  - Service coordination
+  - Chat interface
+  - Streaming responses
 
 ## 🚀 Quick Start
 
-1. **Install dependencies:**
+### Prerequisites
+
+- Python 3.11+
+- Ollama running locally
+- FFmpeg installed (for audio processing)
+- Whisper.cpp compiled and available
+
+### Installation
+
+1. **Clone the repository**:
+
+   ```bash
+   git clone <repository-url>
+   cd light-jarvis
+   ```
+
+2. **Install dependencies**:
 
    ```bash
    uv sync
    ```
 
-2. **Set up environment variables:**
+3. **Set up Whisper.cpp**:
 
+   ```bash
+   # Follow the whisper.cpp setup instructions
+   # Ensure the model is available at models/ggml-base.en.bin
+   ```
+
+4. **Configure environment**:
    ```bash
    cp env.example .env
    # Edit .env with your configuration
    ```
 
-3. **Start the MCP server:**
+### Running the Services
 
-   ```bash
-   uv run python scripts/start_mcp_server.py
-   ```
-
-4. **Run Jarvis:**
-   ```bash
-   uv run python jarvis/cli.py
-   ```
-
-## 📋 Environment Variables
-
-Jarvis uses environment variables to configure its behavior. All environment variables are prefixed with `JARVIS_` and use double underscores (`__`) for nested configuration.
-
-### 🔧 General Configuration
-
-| Variable                    | Default | Description                                                    |
-| --------------------------- | ------- | -------------------------------------------------------------- |
-| `JARVIS_GENERAL__DEBUG`     | `false` | Enable debug mode for verbose output                           |
-| `JARVIS_GENERAL__LOG_LEVEL` | `DEBUG` | Logging level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
-
-### 📝 Logging Configuration
-
-| Variable                       | Default             | Description                                                  |
-| ------------------------------ | ------------------- | ------------------------------------------------------------ |
-| `JARVIS_LOGGING__LEVEL`        | `INFO`              | Log level for the logging system                             |
-| `JARVIS_LOGGING__DIR`          | `./logs`            | Directory for log files (organized by date: `logs/YYYY/MM/`) |
-| `JARVIS_LOGGING__CONSOLE`      | `false`             | Enable/disable console output (`true`/`false`)               |
-| `JARVIS_LOGGING__FILE`         | `true`              | Enable/disable file logging (`true`/`false`)                 |
-| `JARVIS_LOGGING__RICH`         | `true`              | Enable/disable rich formatting in console (`true`/`false`)   |
-| `JARVIS_LOGGING__MAX_SIZE`     | `10485760`          | Max log file size in bytes before rotation (10MB)            |
-| `JARVIS_LOGGING__BACKUP_COUNT` | `5`                 | Number of backup files to keep                               |
-| `JARVIS_LOGGING__DATE_FORMAT`  | `%Y-%m-%d %H:%M:%S` | Date format for log entries                                  |
-
-### 🤖 Ollama Configuration
-
-| Variable                     | Default                  | Description                 |
-| ---------------------------- | ------------------------ | --------------------------- |
-| `JARVIS_OLLAMA__HOST`        | `http://localhost:11434` | Ollama server URL           |
-| `JARVIS_OLLAMA__MODEL`       | `llama3.2:3b`            | Ollama model to use         |
-| `JARVIS_OLLAMA__TEMPERATURE` | `0.1`                    | Model temperature (0.0-1.0) |
-| `JARVIS_OLLAMA__TIMEOUT`     | `120`                    | Request timeout in seconds  |
-
-### 🔌 MCP Server Configuration
-
-| Variable              | Default     | Description                    |
-| --------------------- | ----------- | ------------------------------ |
-| `JARVIS_MCP__HOST`    | `localhost` | MCP server host                |
-| `JARVIS_MCP__PORT`    | `3000`      | MCP server port                |
-| `JARVIS_MCP__TIMEOUT` | `30`        | MCP request timeout in seconds |
-
-### 🔐 Google Services Configuration
-
-| Variable                             | Default                             | Description                            |
-| ------------------------------------ | ----------------------------------- | -------------------------------------- |
-| `JARVIS_GOOGLE__CREDENTIALS_FILE`    | `~/.jarvis/google_credentials.json` | Path to Google OAuth2 credentials file |
-| `JARVIS_GOOGLE__TOKEN_FILE`          | `~/.jarvis/google_token.json`       | Path to Google OAuth2 token file       |
-| `JARVIS_GOOGLE__OAUTH_CALLBACK_HOST` | `localhost`                         | OAuth2 callback host                   |
-| `JARVIS_GOOGLE__OAUTH_CALLBACK_PORT` | `3000`                              | OAuth2 callback port                   |
-| `JARVIS_GOOGLE__OAUTH_CALLBACK_PATH` | `/oauth2/callback`                  | OAuth2 callback path                   |
-| `JARVIS_GOOGLE__SCOPES`              | See below                           | Google API scopes (comma-separated)    |
-
-#### Google API Scopes
-
-The default Google API scopes are:
-
-- `https://www.googleapis.com/auth/gmail.readonly`
-- `https://www.googleapis.com/auth/calendar.readonly`
-- `https://www.googleapis.com/auth/calendar.events`
-
-To override, set `JARVIS_GOOGLE__SCOPES` as a comma-separated list:
+#### Option 1: Start All Services (Recommended)
 
 ```bash
-JARVIS_GOOGLE__SCOPES="https://www.googleapis.com/auth/gmail.readonly,https://www.googleapis.com/auth/gmail.send"
+python scripts/start_all_services.py
 ```
 
-## 📁 Configuration Files
+#### Option 2: Start Services Individually
 
-### TOML Configuration (`config/default.toml`)
+1. **Start MCP Orchestrator**:
 
-Jarvis loads default configuration from `config/default.toml`. Environment variables override TOML values.
+   ```bash
+   python scripts/start_mcp_orchestrator.py
+   ```
 
-### Environment File (`.env`)
+2. **Start Whisper Service**:
 
-Create a `.env` file in the project root to set environment variables:
+   ```bash
+   python scripts/start_whisper_service.py
+   ```
+
+3. **Start Main Orchestrator**:
+   ```bash
+   python scripts/start_main_orchestrator.py
+   ```
+
+#### Option 3: Use the CLI
 
 ```bash
-# Copy the example file
-cp env.example .env
+# Chat with Jarvis
+jarvis chat "Hello, what can you help me with?"
 
-# Edit with your values
-nano .env
+# Start the server
+jarvis server
+
+# Stream responses
+jarvis chat "Check my emails" --stream
 ```
 
-## 🛠️ Tool Configuration
+## 🔧 Configuration
 
-Tools are configured in `config/tools.json` and organized by category:
+Configuration is managed through `config/default.toml` and environment variables:
 
-- **Gmail Tools**: Email reading and sending
-- **Calendar Tools**: Event management
-- **Notification Tools**: System notifications and reminders
+```toml
+[ollama]
+host = "http://localhost:11434"
+model = "llama3.2:3b"
+temperature = 0.1
 
-## 🔧 Development
+[mcp]
+host = "localhost"
+port = 3000
+
+[whisper]
+model_path = "models/ggml-base.en.bin"
+whisper_cpp_path = "whisper.cpp/main"
+language = "en"
+
+[tts]
+engine = "edge"
+voice = "en-US-AriaNeural"
+rate = 200
+volume = 0.8
+
+[google]
+credentials_file = "~/.jarvis/google_credentials.json"
+scopes = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events"
+]
+```
+
+## 📡 API Endpoints
+
+### Main Orchestrator (Port 3002)
+
+- `POST /chat` - Send a chat message
+- `POST /chat/stream` - Stream chat responses
+- `POST /stt/transcribe` - Transcribe audio
+- `POST /tts/speak` - Convert text to speech
+- `GET /services/status` - Check all services status
+
+### MCP Orchestrator (Port 3000)
+
+- `GET /tools` - List available tools
+- `POST /tools/execute` - Execute a tool
+- `POST /auth/google` - Authenticate with Google
+- `GET /auth/status` - Check authentication status
+
+### Whisper Service (Port 3001)
+
+- `POST /stt/transcribe` - Transcribe audio file
+- `POST /stt/transcribe-raw` - Transcribe raw audio data
+- `POST /tts/speak` - Convert text to speech
+- `POST /tts/save` - Save speech to file
+- `GET /tts/voices` - List available voices
+
+## 🛠️ Available Tools
+
+Jarvis has access to the following tools:
+
+### Gmail Tools
+
+- `gmail_read_emails` - Read and search emails
+- `gmail_send_email` - Send emails
+
+### Calendar Tools
+
+- `calendar_list_events` - List calendar events
+- `calendar_create_event` - Create new events
+
+### Notification Tools
+
+- `send_notification` - Send system notifications
+- `schedule_reminder` - Schedule reminder notifications
+- `cancel_reminder` - Cancel scheduled reminders
+- `list_reminders` - List all scheduled reminders
+
+## 🔍 Development
 
 ### Project Structure
 
 ```
-jarvis/
-├── packages/
-│   ├── core/           # Core assistant logic
-│   ├── llm-service/    # LLM integration (Ollama)
-│   ├── mcp-server/     # MCP server implementation
-│   ├── shared/         # Shared utilities and models
-│   └── tools/          # Tool implementations
-│       ├── gmail-tool/
-│       ├── calendar-tool/
-│       └── notification-tool/
-├── config/             # Configuration files
-├── scripts/            # Utility scripts
-└── tests/              # Test suite
+packages/
+├── shared/                 # Shared utilities and models
+├── llm-service/           # LLM integration (Ollama)
+├── mcp-orchestrator/      # MCP tools consolidation
+├── whisper-service/       # STT/TTS functionality
+├── main-orchestrator/     # Main coordination service
+└── tools/                 # Individual tool implementations
+    ├── gmail-tool/
+    ├── calendar-tool/
+    └── notification-tool/
 ```
 
-### Running Tests
+### Adding New Tools
+
+1. Create a new tool package in `packages/tools/`
+2. Implement the tool interface
+3. Register the tool in the MCP Orchestrator
+4. Update the system prompt in the Main Orchestrator
+
+### Testing
 
 ```bash
 # Run all tests
-uv run pytest
+pytest
 
 # Run specific test categories
-uv run pytest tests/unit/
-uv run pytest tests/integration/
-```
-
-### Logging
-
-Logs are organized by date in the `logs/` directory:
-
-```
-logs/
-└── 2025/
-    └── 09/
-        ├── 2025_09_26_jarvis.log
-        ├── 2025_09_26_jarvis.assistant.log
-        ├── 2025_09_26_jarvis.mcp.server.log
-        └── ...
-```
-
-## 🔐 Google OAuth2 Setup
-
-1. **Create Google Cloud Project:**
-
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select existing one
-
-2. **Enable APIs:**
-
-   - Enable Gmail API
-   - Enable Google Calendar API
-
-3. **Create OAuth2 Credentials:**
-
-   - Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
-   - Set application type to "Desktop application"
-   - Download the JSON file
-
-4. **Configure Jarvis:**
-
-   ```bash
-   # Copy credentials to Jarvis config directory
-   cp ~/Downloads/your-credentials.json ~/.jarvis/google_credentials.json
-
-   # Set environment variable (optional)
-   export JARVIS_GOOGLE__CREDENTIALS_FILE="~/.jarvis/google_credentials.json"
-   ```
-
-5. **First Run:**
-   - Start the MCP server
-   - Jarvis will open a browser for OAuth2 authentication
-   - Grant permissions and complete the flow
-
-## 🚀 Deployment
-
-### Production Environment
-
-For production deployment, consider these environment variables:
-
-```bash
-# Production settings
-JARVIS_GENERAL__DEBUG=false
-JARVIS_GENERAL__LOG_LEVEL=INFO
-JARVIS_LOGGING__CONSOLE=false
-JARVIS_LOGGING__FILE=true
-JARVIS_LOGGING__RICH=false
-
-# Secure paths
-JARVIS_GOOGLE__CREDENTIALS_FILE=/etc/jarvis/google_credentials.json
-JARVIS_GOOGLE__TOKEN_FILE=/etc/jarvis/google_token.json
-JARVIS_LOGGING__DIR=/var/log/jarvis
-```
-
-### Docker Deployment
-
-```dockerfile
-FROM python:3.11-slim
-
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
-
-# Copy project
-COPY . /app
-WORKDIR /app
-
-# Install dependencies
-RUN uv sync --frozen
-
-# Set environment variables
-ENV JARVIS_LOGGING__DIR=/app/logs
-ENV JARVIS_GOOGLE__CREDENTIALS_FILE=/app/config/google_credentials.json
-
-# Expose port
-EXPOSE 3000
-
-# Start MCP server
-CMD ["uv", "run", "python", "scripts/start_mcp_server.py"]
+pytest -m unit
+pytest -m integration
+pytest -m e2e
 ```
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **"No module named 'jarvis_gmail'"**
+1. **Whisper.cpp not found**:
 
-   - Ensure all dependencies are installed: `uv sync`
-   - Check that tool packages are in the Python path
+   - Ensure whisper.cpp is compiled and in your PATH
+   - Check the `whisper_cpp_path` configuration
 
-2. **OAuth2 callback errors**
+2. **Model not found**:
 
-   - Verify `JARVIS_GOOGLE__OAUTH_CALLBACK_HOST` and `JARVIS_GOOGLE__OAUTH_CALLBACK_PORT`
-   - Ensure the MCP server is running before authentication
+   - Download the Whisper model to `models/ggml-base.en.bin`
+   - Verify the `model_path` configuration
 
-3. **Ollama connection errors**
+3. **FFmpeg not found**:
 
-   - Check that Ollama is running: `ollama serve`
-   - Verify `JARVIS_OLLAMA__HOST` and `JARVIS_OLLAMA__MODEL`
+   - Install FFmpeg: `brew install ffmpeg` (macOS)
+   - Ensure it's in your PATH
 
-4. **Permission denied errors**
-   - Ensure Jarvis has write access to log and config directories
-   - Check file permissions for Google credentials
+4. **Google authentication fails**:
+   - Check your Google credentials file
+   - Verify OAuth callback URL configuration
 
-### Debug Mode
+### Logs
 
-Enable debug mode for detailed logging:
-
-```bash
-export JARVIS_GENERAL__DEBUG=true
-export JARVIS_GENERAL__LOG_LEVEL=DEBUG
-export JARVIS_LOGGING__CONSOLE=true
-```
-
-## 📚 API Reference
-
-### MCP Server Endpoints
-
-- `GET /health` - Health check
-- `GET /tools` - List available tools
-- `POST /tools/execute` - Execute a tool
-- `GET /auth/status` - Authentication status
-- `GET /oauth2/callback` - OAuth2 callback
-
-### Tool Categories
-
-#### Gmail Tools
-
-- `gmail_read_emails` - Read and search emails
-- `gmail_send_email` - Send emails
-
-#### Calendar Tools
-
-- `calendar_list_events` - List calendar events
-- `calendar_create_event` - Create calendar events
-
-#### Notification Tools
-
-- `send_notification` - Send system notifications
-- `schedule_reminder` - Schedule reminders
-- `cancel_reminder` - Cancel reminders
-- `list_reminders` - List scheduled reminders
+Logs are stored in `logs/` directory with daily rotation. Check the latest log files for detailed error information.
 
 ## 🤝 Contributing
 
@@ -339,7 +268,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
+- [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) for speech-to-text
+- [Edge-TTS](https://github.com/rany2/edge-tts) for text-to-speech
 - [Ollama](https://ollama.ai/) for local LLM inference
-- [Pydantic](https://pydantic.dev/) for configuration management
-- [FastAPI](https://fastapi.tiangolo.com/) for the MCP server
-- [Rich](https://rich.readthedocs.io/) for beautiful console output
+- [FastAPI](https://fastapi.tiangolo.com/) for the web framework

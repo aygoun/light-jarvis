@@ -72,6 +72,25 @@ class LoggingConfig(BaseModel):
     date_format: str = "%Y-%m-%d %H:%M:%S"
 
 
+class WhisperConfig(BaseModel):
+    """Whisper.cpp configuration."""
+
+    model_path: str = "models/ggml-base.en.bin"
+    whisper_cpp_path: str = "whisper.cpp/main"
+    language: str = "en"
+    temperature: float = 0.0
+    max_len: int = 448
+
+
+class TTSConfig(BaseModel):
+    """Text-to-Speech configuration."""
+
+    engine: str = "edge"  # "edge" or "pyttsx3"
+    voice: Optional[str] = None
+    rate: int = 150
+    volume: float = 1
+
+
 class JarvisConfig(BaseSettings):
     """Main Jarvis configuration."""
 
@@ -83,6 +102,8 @@ class JarvisConfig(BaseSettings):
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
     mcp: MCPConfig = Field(default_factory=MCPConfig)
     google: GoogleConfig = Field(default_factory=GoogleConfig)
+    whisper: WhisperConfig = Field(default_factory=WhisperConfig)
+    tts: TTSConfig = Field(default_factory=TTSConfig)
 
     # Configuration sections
     general: GeneralConfig = Field(default_factory=GeneralConfig)
@@ -92,6 +113,7 @@ class JarvisConfig(BaseSettings):
         env_prefix = "JARVIS_"
         env_file = ".env"
         env_nested_delimiter = "__"
+        extra = "ignore"  # Ignore extra fields from environment
 
     def __init__(self, **kwargs):
         # Load configuration from TOML file
@@ -102,6 +124,9 @@ class JarvisConfig(BaseSettings):
             # Deep merge TOML config with kwargs
             merged_config = self._deep_merge(toml_config, kwargs)
             kwargs = merged_config
+
+        # Handle legacy environment variables
+        kwargs = self._handle_legacy_env_vars(kwargs)
 
         super().__init__(**kwargs)
 
@@ -159,3 +184,36 @@ class JarvisConfig(BaseSettings):
             else:
                 result[key] = value
         return result
+
+    def _handle_legacy_env_vars(self, config: dict) -> dict:
+        """Handle legacy environment variable names."""
+        import os
+
+        # Map old environment variable names to new nested structure
+        legacy_mappings = {
+            "WHISPER_MODEL_PATH": ("whisper", "model_path"),
+            "WHISPER_CPP_PATH": ("whisper", "whisper_cpp_path"),
+            "WHISPER_LANGUAGE": ("whisper", "language"),
+            "WHISPER_TEMPERATURE": ("whisper", "temperature"),
+            "WHISPER_MAX_LEN": ("whisper", "max_len"),
+            "TTS_ENGINE": ("tts", "engine"),
+            "TTS_VOICE": ("tts", "voice"),
+            "TTS_RATE": ("tts", "rate"),
+            "TTS_VOLUME": ("tts", "volume"),
+        }
+
+        for env_var, (section, key) in legacy_mappings.items():
+            value = os.getenv(env_var)
+            if value is not None:
+                # Convert string values to appropriate types
+                if key in ["temperature", "volume"]:
+                    value = float(value)
+                elif key in ["max_len", "rate"]:
+                    value = int(value)
+
+                # Set the value in the nested structure
+                if section not in config:
+                    config[section] = {}
+                config[section][key] = value
+
+        return config

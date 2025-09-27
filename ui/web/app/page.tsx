@@ -4,16 +4,27 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { InputForm } from "@/components/input-form";
 import { SpeakingBubble } from "@/components/speaking-bubble";
+import { StatusIndicator } from "@/components/status-indicator";
+import { jarvisAPI, ChatRequest, ChatResponse } from "@/lib/api";
+import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function Home() {
   const [response, setResponse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [useVoiceMode, setUseVoiceMode] = useState(true);
+  const [streamingController, setStreamingController] =
+    useState<AbortController | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
+    null
+  );
+  const [completeResponse, setCompleteResponse] = useState("");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const synthRef = useRef<SpeechSynthesis | null>(null);
 
   useEffect(() => {
     // Initialize speech recognition
@@ -38,31 +49,36 @@ export default function Home() {
         };
       }
     }
-
-    // Initialize speech synthesis
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      synthRef.current = window.speechSynthesis;
-    }
   }, []);
 
-  const speakText = (text: string) => {
-    if (synthRef.current) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
-
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-
-      synthRef.current.speak(utterance);
+  const stopSpeaking = () => {
+    setIsSpeaking(false);
+    setIsPaused(false);
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.currentTime = 0;
     }
   };
 
-  const stopSpeaking = () => {
-    if (synthRef.current) {
-      synthRef.current.cancel();
-      setIsSpeaking(false);
+  const pauseSpeaking = () => {
+    setIsPaused(true);
+    if (audioElement) {
+      audioElement.pause();
+    }
+  };
+
+  const resumeSpeaking = () => {
+    setIsPaused(false);
+    if (audioElement) {
+      audioElement.play();
+    }
+  };
+
+  const stopStreaming = () => {
+    if (streamingController) {
+      streamingController.abort();
+      setStreamingController(null);
+      setIsLoading(false);
     }
   };
 
@@ -84,29 +100,171 @@ export default function Home() {
   };
 
   const handleSubmit = async (message: string) => {
+    // Stop any existing streaming
+    if (streamingController) {
+      streamingController.abort();
+    }
+
+    // Create new abort controller for this request
+    const controller = new AbortController();
+    setStreamingController(controller);
+
     setIsLoading(true);
     setResponse("");
+    setCompleteResponse("");
 
-    // Simulate API call with a beautiful response
-    setTimeout(() => {
-      const aiResponse = `Thank you for your message: "${message}"
+    try {
+      // Use the new API client with streaming
+      const request: ChatRequest = {
+        message,
+        use_stt: false,
+      };
 
-I'm Jarvis, your AI assistant. I'm here to help you with a wide range of tasks including:
+      await jarvisAPI.sendChatMessageStream(
+        request,
+        // onToken callback - called for each token received
+        (token: string) => {
+          if (!controller.signal.aborted) {
+            setResponse((prev) => {
+              const newResponse = prev + token;
+              setCompleteResponse(newResponse);
+              console.log(
+                "Token received, completeResponse length:",
+                newResponse.length
+              );
+              return newResponse;
+            });
+          }
+        },
+        // onComplete callback - called when streaming is done
+        async () => {
+          if (!controller.signal.aborted) {
+            setIsLoading(false);
+            setStreamingController(null);
 
-• Answering questions and providing information
-• Helping with creative writing and brainstorming
-• Assisting with problem-solving and analysis
-• Providing explanations on complex topics
-• And much more!
+            console.log(
+              "Streaming completed. useVoiceMode:",
+              useVoiceMode,
+              "completeResponse length:",
+              completeResponse.length
+            );
 
-How can I assist you today? I'm ready to help with whatever you need.`;
+            // Generate TTS audio if voice mode is enabled
+            if (useVoiceMode && completeResponse) {
+              console.log(
+                "Generating TTS for response:",
+                completeResponse.substring(0, 100) + "..."
+              );
+              try {
+                const ttsRequest = { text: completeResponse };
+                const ttsResponse = await jarvisAPI.speakText(ttsRequest);
+                console.log("TTS Response:", ttsResponse);
 
-      setResponse(aiResponse);
-      setIsLoading(false);
+                if (ttsResponse.success && ttsResponse.audio_url) {
+                  const audio = new Audio(ttsResponse.audio_url);
+                  setAudioElement(audio);
 
-      // Automatically speak the response
-      speakText(aiResponse);
-    }, 2000);
+                  audio.onplay = () => {
+                    console.log("Audio started playing");
+                    setIsSpeaking(true);
+                  };
+                  audio.onpause = () => {
+                    console.log("Audio paused");
+                    setIsPaused(true);
+                  };
+                  audio.onended = () => {
+                    console.log("Audio ended");
+                    setIsSpeaking(false);
+                    setIsPaused(false);
+                  };
+
+                  console.log("Starting audio playback...");
+                  await audio.play();
+                } else {
+                  console.log("TTS failed - no audio URL or success=false");
+                }
+              } catch (error) {
+                console.error("TTS failed:", error);
+                toast.error("Failed to generate speech", {
+                  duration: 3000,
+                  position: "top-right",
+                });
+              }
+            } else {
+              console.log(
+                "TTS skipped - useVoiceMode:",
+                useVoiceMode,
+                "completeResponse length:",
+                completeResponse.length
+              );
+            }
+          }
+        },
+        // onError callback - called if streaming fails
+        (error: string) => {
+          if (!controller.signal.aborted) {
+            console.error("Streaming failed:", error);
+            toast.error(`Connection failed: ${error}`, {
+              duration: 5000,
+              position: "top-right",
+            });
+
+            // Fallback response
+            const fallbackResponse = `I apologize, but I'm having trouble connecting to my services right now. 
+
+Error: ${error}
+
+Please check the service status below and try again.`;
+
+            setResponse(fallbackResponse);
+            setCompleteResponse(fallbackResponse);
+            setIsLoading(false);
+            setStreamingController(null);
+          }
+        },
+        // AbortSignal for cancellation
+        controller.signal
+      );
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        console.error("API call failed:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to get response";
+
+        toast.error(`Request failed: ${errorMessage}`, {
+          duration: 5000,
+          position: "top-right",
+        });
+
+        // Fallback response
+        const fallbackResponse = `I apologize, but I'm having trouble connecting to my services right now. 
+
+Error: ${errorMessage}
+
+Please check the service status below and try again.`;
+
+        setResponse(fallbackResponse);
+        setCompleteResponse(fallbackResponse);
+        setIsLoading(false);
+        setStreamingController(null);
+      }
+    }
+  };
+
+  const handleTranscription = (text: string) => {
+    setTranscript(text);
+
+    // Auto-submit the transcribed text
+    if (text.trim()) {
+      handleSubmit(text.trim());
+    }
+  };
+
+  const handleError = (errorMessage: string) => {
+    toast.error(`Voice error: ${errorMessage}`, {
+      duration: 4000,
+      position: "top-right",
+    });
   };
 
   return (
@@ -117,16 +275,87 @@ How can I assist you today? I'm ready to help with whatever you need.`;
       {/* Subtle grid pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.02%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%221%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-30" />
 
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="absolute top-8 left-8 right-8 z-20 flex items-center justify-between"
+      >
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12">
+            <img
+              src="/logo.svg"
+              alt="Jarvis Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold text-white">Jarvis</h1>
+            <p className="text-gray-400 mt-2">Your AI Assistant</p>
+          </div>
+        </div>
+
+        {/* Status Indicator */}
+        <Link
+          href="/status"
+          className="flex items-center space-x-2 p-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg hover:bg-gray-700/50 transition-colors"
+        >
+          <StatusIndicator />
+        </Link>
+      </motion.div>
+
       {/* Main centered content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen w-full max-w-4xl mx-auto px-4">
         {/* Speaking Bubble */}
         <SpeakingBubble
           isSpeaking={isSpeaking}
-          response={response}
-          isLoading={isLoading}
+          isPaused={isPaused}
           onStopSpeaking={stopSpeaking}
-          transcript={transcript}
+          onPauseSpeaking={pauseSpeaking}
+          onResumeSpeaking={resumeSpeaking}
         />
+
+        {/* Voice Mode Toggle */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mb-8"
+        >
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-400">Voice Mode:</span>
+            <button
+              onClick={() => setUseVoiceMode(!useVoiceMode)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                useVoiceMode ? "bg-blue-500" : "bg-gray-600"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  useVoiceMode ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+            <span className="text-sm text-gray-400">
+              {useVoiceMode ? "Enabled" : "Disabled"}
+            </span>
+          </div>
+        </motion.div>
+
+        {/* Transcript Display */}
+        {transcript && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-4 bg-gray-800/30 border border-gray-600/30 rounded-lg"
+          >
+            <p className="text-gray-300 text-sm">
+              <span className="font-medium text-gray-400">You said:</span>{" "}
+              {transcript}
+            </p>
+          </motion.div>
+        )}
 
         {/* Input Form at bottom */}
         <motion.div
@@ -144,7 +373,7 @@ How can I assist you today? I'm ready to help with whatever you need.`;
         </motion.div>
 
         {/* Response text display below input */}
-        {response && (
+        {(response || isLoading) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -152,18 +381,81 @@ How can I assist you today? I'm ready to help with whatever you need.`;
             className="mt-8 w-full max-w-4xl"
           >
             <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-2xl">
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-                className="text-gray-300 text-center leading-relaxed whitespace-pre-wrap"
-              >
-                {response}
-              </motion.p>
+              <div className="flex items-center justify-center">
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5, duration: 0.8 }}
+                  className="text-gray-300 text-center leading-relaxed whitespace-pre-wrap flex-1"
+                >
+                  {response}
+                  {isLoading && !response && (
+                    <span className="inline-block ml-1">
+                      <span className="animate-pulse">●</span>
+                      <span className="animate-pulse delay-100">●</span>
+                      <span className="animate-pulse delay-200">●</span>
+                    </span>
+                  )}
+                  {isLoading && response && (
+                    <span className="inline-block ml-1 animate-pulse">●</span>
+                  )}
+                </motion.p>
+
+                {/* Stop streaming button */}
+                {isLoading && streamingController && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    onClick={stopStreaming}
+                    className="ml-4 p-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
+                    title="Stop streaming"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </motion.button>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
       </div>
+
+      {/* Toast Notifications */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#1f2937",
+            color: "#f9fafb",
+            border: "1px solid #374151",
+            borderRadius: "8px",
+          },
+          success: {
+            style: {
+              background: "#065f46",
+              color: "#f0fdf4",
+              border: "1px solid #10b981",
+            },
+          },
+          error: {
+            style: {
+              background: "#7f1d1d",
+              color: "#fef2f2",
+              border: "1px solid #ef4444",
+            },
+          },
+        }}
+      />
     </div>
   );
 }

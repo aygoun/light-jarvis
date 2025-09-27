@@ -104,10 +104,10 @@ class GoogleAuthManager:
             )
 
             self.logger.info(
-                f"🌐 Please visit this URL to authorize the application: {auth_url}"
+                f"🌐 Please visit this URL to authorize the application: {auth_url[:30]}..."
             )
             self.logger.info(
-                f"🔄 Waiting for OAuth callback at {self.config.oauth_callback_url}"
+                f"🔄 Waiting for OAuth callback at {self.config.oauth_callback_url[:30]}..."
             )
 
             # Open browser automatically

@@ -23,6 +23,13 @@ class GmailClient:
         """Check if the Gmail service is authenticated and ready to use."""
         return self.service is not None
 
+    def set_service(self, service, credentials=None):
+        """Set the authenticated Gmail service."""
+        self.service = service
+        if credentials:
+            self.credentials = credentials
+        self.logger.info("✅ Gmail service authenticated and ready")
+
     async def read_emails(
         self, query: str = "", max_results: int = 10
     ) -> List[EmailMessage]:
