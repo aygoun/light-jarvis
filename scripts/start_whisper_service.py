@@ -16,10 +16,10 @@ from jarvis_whisper_service import WhisperServiceServer
 async def main():
     """Start the Whisper Service server."""
     print("🎤 Starting Whisper Service Server...")
-    
+
     # Load configuration
     config = JarvisConfig()
-    
+
     # Create and start server
     server = WhisperServiceServer(config.whisper, config.tts)
     await server.start_server(host="localhost", port=3001)

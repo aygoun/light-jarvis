@@ -1,16 +1,12 @@
 """Whisper Service Server - dedicated STT/TTS functionality."""
 
-import asyncio
-import tempfile
-from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, Response
-from pydantic import BaseModel
 
-from jarvis_shared.config import JarvisConfig, WhisperConfig, TTSConfig
+from jarvis_shared.config import WhisperConfig, TTSConfig
 from jarvis_shared.logger import get_logger
 
 from .stt_service import STTService

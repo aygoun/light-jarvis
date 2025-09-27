@@ -16,10 +16,10 @@ from jarvis_main_orchestrator import MainOrchestratorServer
 async def main():
     """Start the Main Orchestrator server."""
     print("🤖 Starting Main Orchestrator Server...")
-    
+
     # Load configuration
     config = JarvisConfig()
-    
+
     # Create and start server
     server = MainOrchestratorServer(config)
     await server.start_server(host="localhost", port=3002)

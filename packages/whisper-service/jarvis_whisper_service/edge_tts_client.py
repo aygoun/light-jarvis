@@ -30,7 +30,7 @@ class EdgeTTSClient:
             # Limit text length to prevent very long processing times
             if len(text) > 1000:
                 text = text[:1000] + "..."
-                self.logger.warning(f"Text truncated to 1000 characters")
+                self.logger.warning("Text truncated to 1000 characters")
 
             # Create temporary file
             with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp_file:
@@ -86,7 +86,7 @@ class EdgeTTSClient:
             # Limit text length to prevent very long processing times
             if len(text) > 1000:
                 text = text[:1000] + "..."
-                self.logger.warning(f"Text truncated to 1000 characters")
+                self.logger.warning("Text truncated to 1000 characters")
 
             # Generate speech
             communicate = edge_tts.Communicate(

@@ -1,10 +1,8 @@
 """Text-to-Speech service using Edge-TTS."""
 
-import tempfile
-import os
 import hashlib
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 
 from jarvis_shared.config import TTSConfig
 from jarvis_shared.logger import get_logger

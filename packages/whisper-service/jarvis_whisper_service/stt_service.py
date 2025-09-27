@@ -1,6 +1,5 @@
 """Speech-to-Text service using Whisper.cpp."""
 
-import asyncio
 import tempfile
 from pathlib import Path
 from typing import Dict, Any, Optional

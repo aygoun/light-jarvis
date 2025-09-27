@@ -1,7 +1,7 @@
 """Whisper Service Client for communicating with the Whisper Service server."""
 
 import aiohttp
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from jarvis_shared.logger import get_logger
 
 

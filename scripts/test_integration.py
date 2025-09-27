@@ -17,42 +17,43 @@ async def test_basic_functionality():
     """Test basic Jarvis functionality."""
     print("🧪 Testing Jarvis Integration...")
     print("=" * 50)
-    
+
     try:
         # Load configuration
         print("📋 Loading configuration...")
         config = JarvisConfig()
         print("✅ Configuration loaded")
-        
+
         # Initialize assistant
         print("🤖 Initializing Jarvis Assistant...")
         assistant = JarvisAssistant(config)
         await assistant.initialize()
         print("✅ Assistant initialized")
-        
+
         # Test basic chat
         print("💬 Testing basic chat...")
         response = await assistant.process_command("Hello, can you help me?")
         print(f"✅ Chat response: {response[:100]}...")
-        
+
         # Test services status
         print("📊 Checking services status...")
         status = await assistant.get_services_status()
         print(f"✅ Services status: {status}")
-        
+
         # Cleanup
         await assistant.shutdown()
         print("✅ Assistant shutdown complete")
-        
+
         print("=" * 50)
         print("🎉 All tests passed! Jarvis is working correctly.")
-        
+
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
-    
+
     return True
 
 

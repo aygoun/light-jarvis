@@ -16,10 +16,10 @@ from jarvis_mcp_orchestrator import MCPOrchestratorServer
 async def main():
     """Start the MCP Orchestrator server."""
     print("🚀 Starting MCP Orchestrator Server...")
-    
+
     # Load configuration
     config = JarvisConfig()
-    
+
     # Create and start server
     server = MCPOrchestratorServer(config.mcp)
     await server.start_server()

@@ -4,7 +4,6 @@ Jarvis CLI - Simple command-line interface to get latest Revolut email and next 
 """
 
 import asyncio
-import json
 import ast
 import sys
 from datetime import datetime, timedelta

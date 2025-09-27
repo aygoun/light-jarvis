@@ -1,11 +1,10 @@
 """MCP Orchestrator Server - consolidates all MCP tools."""
 
 import asyncio
-import json
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware

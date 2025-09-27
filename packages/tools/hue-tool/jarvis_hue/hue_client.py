@@ -1,7 +1,6 @@
 """Philips Hue API client for controlling smart lights."""
 
 import asyncio
-import json
 from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 import aiohttp

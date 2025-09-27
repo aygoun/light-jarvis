@@ -3,11 +3,10 @@
 import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from dataclasses import asdict
 
 from jarvis_shared.logger import get_logger
 from jarvis_shared.config import HueConfig
-from .hue_client import HueClient, HueLight, HueGroup
+from .hue_client import HueClient
 
 
 class HueTool:

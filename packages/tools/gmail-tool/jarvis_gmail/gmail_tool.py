@@ -1,7 +1,6 @@
 """Gmail tool implementation for MCP integration."""
 
 import json
-import os
 from pathlib import Path
 from typing import Dict, Any, List
 

@@ -2,7 +2,6 @@
 """Test script for Hue tool to verify connection and functionality."""
 
 import asyncio
-import json
 import sys
 from pathlib import Path
 

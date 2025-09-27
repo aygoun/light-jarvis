@@ -67,13 +67,13 @@ async def register_user():
             username = await client.register_user(device_name)
 
             if username:
-                print(f"✅ Registration successful!")
+                print("✅ Registration successful!")
                 print(f"Username: {username}")
                 print()
                 print("📝 Add this to your configuration:")
                 print(f"   JARVIS_HUE__USERNAME={username}")
                 print("   or update config/default.toml:")
-                print(f"   [hue]")
+                print("   [hue]")
                 print(f'   username = "{username}"')
                 print()
                 print("🎉 You can now use the Hue tool!")
