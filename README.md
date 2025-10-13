@@ -1,6 +1,6 @@
 <div align="center">
 
-![Jarvis Logo](docs/assets/logo.png)
+<img src="docs/assets/logo.png" alt="Jarvis Logo" width="150" />
 
 # Jarvis - AI Assistant
 
